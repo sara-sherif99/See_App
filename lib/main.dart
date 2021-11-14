@@ -33,8 +33,8 @@ class FirstScreen extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             image: DecorationImage(
-              //colorFilter: new ColorFilter.mode(Colors.black.withOpacity(0.6), BlendMode.dstATop),
-              image: AssetImage("assets/images/background.jpg"),
+              //colorFilter: new ColorFilter.mode(Colors.white24.withOpacity(0.9), BlendMode.dstATop),
+              image: AssetImage("assets/images/bg5.jpg"),
               fit: BoxFit.cover,
             ),
           ),
@@ -131,7 +131,7 @@ class _LogIn extends State<LogIn> {
         appBar: AppBar(
           centerTitle: true,
           title: Text(
-            "LOG IN",
+            "Log in",
             style: TextStyle(
               fontFamily: "RubikItalic",
               fontSize: 30,
@@ -154,26 +154,28 @@ class _LogIn extends State<LogIn> {
             child: Column(
               children: <Widget>[
                 SizedBox(
-                  height: 30,
+                  height: 25,
                 ),
                 Container(
-                  height: 60,
+                  height: 65,
                   child: Icon(
                     See.see,
-                    size: 80,
-                    color: Color(0xff4F7F8F),
+                    size: 100,
+                    color: Colors.black,
+                    //color: Color(0xff4F7F8F),
                   ),
                 ),
                 Text(
                   'See',
                   style: TextStyle(
-                    fontSize: 40,
+                    fontSize: 50,
                     fontFamily: 'Lobster',
-                    color: Color(0xff4F7F8F),
+                    color: Colors.black,
+                    //color: Color(0xff4F7F8F),
                   ),
                 ),
                 SizedBox(
-                  height: 60,
+                  height: 30,
                 ),
                 Container(
                   height: 50,
@@ -205,7 +207,7 @@ class _LogIn extends State<LogIn> {
                 ),
                 const SizedBox(height: 12.0),
                 Container(
-                  height: 40,
+                  height: 50,
                   padding: const EdgeInsets.only(left: 15, right: 15),
                   child: TextField(
                     decoration: InputDecoration(
@@ -253,7 +255,7 @@ class _LogIn extends State<LogIn> {
                   ],
                 ),
                 SizedBox(
-                  height: 10,
+                  height: 20,
                 ),
                 MaterialButton(
                   height: 40,
@@ -302,7 +304,7 @@ class _SignUp extends State<Sign> {
         appBar: AppBar(
           centerTitle: true,
           title: Text(
-            "SIGN UP",
+            "Sign up",
             style: TextStyle(
               fontFamily: "RubikItalic",
               fontSize: 30,
