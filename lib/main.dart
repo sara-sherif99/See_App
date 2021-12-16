@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:graduation/NavBar.dart';
 import 'package:flutter/services.dart';
 //import 'package:graduation/icons.dart';
@@ -10,6 +11,8 @@ import 'package:graduation/see.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
+import 'package:audioplayers/audioplayers.dart';
+
 
 void main() => runApp(
       MaterialApp(
@@ -131,7 +134,7 @@ class _LogIn extends State<LogIn> {
         appBar: AppBar(
           centerTitle: true,
           title: Text(
-            "Log in",
+            "LOG IN",
             style: TextStyle(
               fontFamily: "RubikItalic",
               fontSize: 30,
@@ -240,7 +243,8 @@ class _LogIn extends State<LogIn> {
                       width: 12,
                     ),
                     Checkbox(
-                      checkColor: Colors.greenAccent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(3)),),
+                      checkColor: Colors.white,
                       value: this.firstValue,
                       onChanged: (bool value) {
                         setState(() {
@@ -249,7 +253,7 @@ class _LogIn extends State<LogIn> {
                       },
                     ),
                     Text(
-                      "Keep me logged in",
+                      "Remember me",
                       style: TextStyle(fontSize: 17, color: Colors.grey),
                     ),
                   ],
@@ -259,9 +263,9 @@ class _LogIn extends State<LogIn> {
                 ),
                 MaterialButton(
                   height: 40,
-                  minWidth: 50,
+                  minWidth: 200,
                   shape: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(5)),
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
                       borderSide: BorderSide(
                         width: 0,
                         color: Color(0xff96D5EB),
@@ -485,9 +489,9 @@ class _SignUp extends State<Sign> {
                 ),
                 MaterialButton(
                   height: 40,
-                  minWidth: 50,
+                  minWidth: 200,
                   shape: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(5)),
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
                       borderSide: BorderSide(
                         width: 0,
                         color: Color(0xff96D5EB),
@@ -526,6 +530,8 @@ class _HomeScreen extends State<Home> {
   bool b4 = false;
   bool b5 = false;
   bool b6 = false;
+
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -535,9 +541,9 @@ class _HomeScreen extends State<Home> {
           centerTitle: true,
           backgroundColor: Color(0xff96D5EB),
           leading: Padding(
-            padding: const EdgeInsets.only(left: 10),
+            padding: const EdgeInsets.only(left: 0),
             child: Icon(
-              Icons.settings,
+              Icons.view_headline,
               color: Colors.white,
               size: 30,
             ),
@@ -566,11 +572,11 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b1 ? Colors.red : Colors.white,
+                    color: b1 ? Colors.white : Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
-                          color: b1 ? Colors.white : Color(0xff96D5EB),
+                          color: b1 ? Colors.red : Color(0xff96D5EB),
                           width: 2,
                         )),
                     child: Column(
@@ -578,13 +584,13 @@ class _HomeScreen extends State<Home> {
                       children: <Widget>[
                         Icon(
                           Icons.power_settings_new,
-                          color: b1 ? Colors.white : Color(0xff96D5EB),
+                          color: b1 ? Colors.red : Color(0xff96D5EB),
                           size: 40,
                         ),
                         Text(
                           "Power",
                           style: TextStyle(
-                            color: b1 ? Colors.white : Color(0xff96D5EB),
+                            color: b1 ? Colors.red : Color(0xff96D5EB),
                             fontSize: 20,
                           ),
                         ),
@@ -599,11 +605,11 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b2 ? Colors.red : Colors.white,
+                    color: b2 ? Colors.white : Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
-                          color: b2 ? Colors.white : Color(0xff96D5EB),
+                          color: b2 ? Colors.red : Color(0xff96D5EB),
                           width: 2,
                         )),
                     child: Column(
@@ -611,13 +617,13 @@ class _HomeScreen extends State<Home> {
                       children: <Widget>[
                         Icon(
                           Icons.search,
-                          color: b2 ? Colors.white : Color(0xff96D5EB),
+                          color: b2 ? Colors.red : Color(0xff96D5EB),
                           size: 40,
                         ),
                         Text(
                           "Search",
                           style: TextStyle(
-                            color: b2 ? Colors.white : Color(0xff96D5EB),
+                            color: b2 ? Colors.red : Color(0xff96D5EB),
                             fontSize: 20,
                           ),
                         ),
@@ -632,11 +638,11 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b3 ? Colors.red : Colors.white,
+                    color: b3 ? Colors.white : Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
-                          color: b3 ? Colors.white : Color(0xff96D5EB),
+                          color: b3 ? Colors.red : Color(0xff96D5EB),
                           width: 2,
                         )),
                     child: Column(
@@ -644,13 +650,13 @@ class _HomeScreen extends State<Home> {
                       children: <Widget>[
                         Icon(
                           Icons.headset,
-                          color: b3 ? Colors.white : Color(0xff96D5EB),
+                          color: b3 ? Colors.red : Color(0xff96D5EB),
                           size: 40,
                         ),
                         Text(
                           "Audio",
                           style: TextStyle(
-                            color: b3 ? Colors.white : Color(0xff96D5EB),
+                            color: b3 ? Colors.red : Color(0xff96D5EB),
                             fontSize: 20,
                           ),
                         ),
@@ -670,11 +676,11 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b4 ? Colors.red : Colors.white,
+                    color: b4 ? Colors.white : Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
-                          color: b4 ? Colors.white : Color(0xff96D5EB),
+                          color: b4 ? Colors.red : Color(0xff96D5EB),
                           width: 2,
                         )),
                     child: Column(
@@ -682,13 +688,13 @@ class _HomeScreen extends State<Home> {
                       children: <Widget>[
                         Icon(
                           Icons.location_on,
-                          color: b4 ? Colors.white : Color(0xff96D5EB),
+                          color: b4 ? Colors.red : Color(0xff96D5EB),
                           size: 40,
                         ),
                         Text(
                           "Location",
                           style: TextStyle(
-                            color: b4 ? Colors.white : Color(0xff96D5EB),
+                            color: b4 ? Colors.red : Color(0xff96D5EB),
                             fontSize: 20,
                           ),
                         ),
@@ -703,11 +709,11 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b5 ? Colors.red : Colors.white,
+                    color: b5 ? Colors.white : Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
-                          color: b5 ? Colors.white : Color(0xff96D5EB),
+                          color: b5 ? Colors.red : Color(0xff96D5EB),
                           width: 2,
                         )),
                     child: Column(
@@ -715,13 +721,13 @@ class _HomeScreen extends State<Home> {
                       children: <Widget>[
                         Icon(
                           Icons.home,
-                          color: b5 ? Colors.white : Color(0xff96D5EB),
+                          color: b5 ? Colors.red : Color(0xff96D5EB),
                           size: 40,
                         ),
                         Text(
                           "Go Home",
                           style: TextStyle(
-                            color: b5 ? Colors.white : Color(0xff96D5EB),
+                            color: b5 ? Colors.red : Color(0xff96D5EB),
                             fontSize: 20,
                           ),
                         ),
@@ -736,11 +742,11 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b6 ? Colors.red : Colors.white,
+                    color: b6 ? Colors.white : Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
-                          color: b6 ? Colors.white : Color(0xff96D5EB),
+                          color: b6 ? Colors.red : Color(0xff96D5EB),
                           width: 2,
                         )),
                     child: Column(
@@ -748,13 +754,13 @@ class _HomeScreen extends State<Home> {
                       children: <Widget>[
                         Icon(
                           Icons.call,
-                          color: b6 ? Colors.white : Color(0xff96D5EB),
+                          color: b6 ? Colors.red : Color(0xff96D5EB),
                           size: 40,
                         ),
                         Text(
                           "Call",
                           style: TextStyle(
-                            color: b6 ? Colors.white : Color(0xff96D5EB),
+                            color: b6 ? Colors.red : Color(0xff96D5EB),
                             fontSize: 20,
                           ),
                         ),
@@ -774,9 +780,14 @@ class _HomeScreen extends State<Home> {
         drawer: NavBar(),
         floatingActionButton: Container(
           width: 120,
-          height: 55,
+          height: 50,
           child: new FloatingActionButton.extended(
-              elevation: 5.0,
+              elevation: 10.0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(
+                  Radius.circular(20),
+                ),
+              ),
               label: Text(
                 "Scan",
                 style: TextStyle(
@@ -813,9 +824,9 @@ class _FriendsState extends State<Friends> {
           centerTitle: true,
           backgroundColor: Color(0xff96D5EB),
           leading: Padding(
-            padding: const EdgeInsets.only(left: 10),
+            padding: const EdgeInsets.only(left: 0),
             child: Icon(
-              Icons.settings,
+              Icons.view_headline,
               color: Colors.white,
               size: 30,
             ),
@@ -836,46 +847,152 @@ class _FriendsState extends State<Friends> {
         ),
         drawer: NavBar(),
         body: SingleChildScrollView(
-          child: Container(
-            child: Column(
-              children: <Widget>[
-                SizedBox(
-                  height: 30,
-                ),
-                Text(
-                  'Friends',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 40,
-                    color: Color(0xff4F7F8F),
+          child: Center(
+            child: Container(
+              child: Column(
+                children: <Widget>[
+                  SizedBox(
+                    height: 30,
                   ),
-                ),
-                SizedBox(
-                  height: 60,
-                ),
-                MaterialButton(
-                  height: 40,
-                  minWidth: 50,
-                  shape: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(5)),
-                      borderSide: BorderSide(
-                        width: 0,
-                        color: Color(0xff96D5EB),
-                      )),
-                  color: Color(0xff96D5EB),
-                  child: Text(
-                    'LOG IN',
+                  Text(
+                    'Friends',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.white,
+                      fontFamily: "RubikItalic",
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
-                  onPressed: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => Home()));
-                  },
-                ),
-              ],
+                  Container(
+                    padding: new EdgeInsets.all(20.0),
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                          side: BorderSide(
+                            color: Color(0xff96D5EB),
+                            width: 2,
+                          )),
+                      color: Colors.white,
+                      child: Column(
+                        children: <Widget>[
+                          SizedBox(
+                            height: 10,
+                          ),
+                          const ListTile(
+                            leading: Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Color(0xff96D5EB),
+                            ),
+                            title: Text('Username',
+                                style: TextStyle(
+                                  fontSize: 22.0,
+                                  color: Color(0xff96D5EB),
+                                )),
+                            subtitle: Text('email@abx.com',
+                                style: TextStyle(
+                                  fontSize: 18.0,
+                                  color: Color(0xff96D5EB),
+                                )),
+                          ),
+                          ButtonBar(
+                            alignment: MainAxisAlignment.end,
+                            children: <Widget>[
+                              MaterialButton(
+                                child: Text(
+                                  'Edit',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                onPressed: () {/* ... */},
+                                color: Color(0xff96D5EB),
+                              ),
+                              MaterialButton(
+                                color: Color(0xff96D5EB),
+                                child: Text(
+                                  'Remove',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                onPressed: () {/* ... */},
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 60,
+                  ),
+                  MaterialButton(
+                    height: 40,
+                    minWidth: 50,
+                    shape: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(5)),
+                        borderSide: BorderSide(
+                          width: 0,
+                          color: Color(0xff96D5EB),
+                        )),
+                    color: Color(0xff96D5EB),
+                    child: Text(
+                      '+ Add Friend',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                    onPressed: () {
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              shape: OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                                  borderSide: BorderSide(
+                                    width: 0,
+                                    color: Colors.white,
+                                  )),
+                              scrollable: true,
+                              title: Text('Add Friend',style: TextStyle(fontSize: 30),textAlign: TextAlign.center,),
+                              content: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Form(
+                                  child: Column(
+                                    children: <Widget>[
+                                      TextFormField(
+                                        decoration: InputDecoration(
+                                          labelText: 'Email',
+                                          icon: Icon(Icons.person),
+                                        ),
+                                      ),
+                                      TextFormField(
+                                        decoration: InputDecoration(
+                                          labelText: 'Password',
+                                          icon: Icon(Icons.lock ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              actions: [
+                                Center(
+                                  child: MaterialButton(
+                                    color: Color(0xff96D5EB),
+                                    child: Text(
+                                      'Add',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    onPressed: () {Navigator.pop(context);},
+                                  ),
+                                ),
+                              ],
+                            );
+                          });
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -898,9 +1015,9 @@ class _SettingsState extends State<Settings> {
           centerTitle: true,
           backgroundColor: Color(0xff96D5EB),
           leading: Padding(
-            padding: const EdgeInsets.only(left: 10),
+            padding: const EdgeInsets.only(left: 0),
             child: Icon(
-              Icons.settings,
+              Icons.view_headline,
               color: Colors.white,
               size: 30,
             ),
@@ -920,11 +1037,527 @@ class _SettingsState extends State<Settings> {
           ],
         ),
         drawer: NavBar(),
+        body: Container(
+          padding: EdgeInsets.only(left: 16, top: 25, right: 16),
+          child: ListView(
+            children: [
+              Center(
+                child: Text(
+                  "Settings",
+                  style: TextStyle(
+                      fontFamily: "RubikItalic",
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black),
+                ),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              Center(
+                child: SizedBox(
+                  width: 160,
+                  child: MaterialButton(
+                    height: 45,
+                    onPressed: () {
+                      Navigator.push(
+                          context, MaterialPageRoute(builder: (context) => Profile()));
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Edit Profile",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 20,
+                          ),
+                        ),
+                         Icon(Icons.edit,size: 20,color: Colors.red,)
+                      ],
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      side: BorderSide(
+                        color: Colors.grey,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20,),
+              Row(
+                children: [
+                  Icon(
+                    Icons.person,
+                    color: Colors.black,
+                  ),
+                  SizedBox(
+                    width: 8,
+                  ),
+                  Text(
+                    "Account",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              Divider(
+                height: 15,
+                thickness: 2,
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              buildAccountOptionRow(
+                  context, "Linked Devices", "Remove", "Device"),
+              buildAccountOptionRow(context, "Contacts", "Remove", "Contact"),
+              buildDeactivateAccountOptionRow(context, "Deactivate Account"),
+              SizedBox(
+                height: 40,
+              ),
+              Row(
+                children: [
+                  Icon(
+                    Icons.security,
+                    color: Colors.black,
+                  ),
+                  SizedBox(
+                    width: 8,
+                  ),
+                  Text(
+                    "General",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              Divider(
+                height: 15,
+                thickness: 2,
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              buildAccountOptionRow(context, "Language", "Set", "Language"),
+              buildPrivacyAndSecurityOptionRow(
+                context,
+                "Privacy and Security",
+              ),
+              SizedBox(
+                height: 50,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  GestureDetector buildAccountOptionRow(
+      BuildContext context, String title, String label, String option) {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(title),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(option + " 1"),
+                        MaterialButton(
+                          onPressed: () {},
+                          child: Text(
+                            label,
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        )
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(option + " 2"),
+                        MaterialButton(
+                          onPressed: () {},
+                          child: Text(
+                            label,
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        )
+                      ],
+                    ),
+                    MaterialButton(
+                      onPressed: () {},
+                      child: Text("+ Add",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    )
+                  ],
+                ),
+                actions: [
+                  MaterialButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      color: Colors.red,
+                      child: Text(
+                        "Close",
+                        style: TextStyle(color: Colors.white),
+                      )),
+                ],
+              );
+            });
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  GestureDetector buildPrivacyAndSecurityOptionRow(
+    BuildContext context,
+    String title,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(title),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Privacy"),
+                        MaterialButton(
+                          onPressed: () {},
+                          child: Text(
+                            "edit",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        )
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Security"),
+                        MaterialButton(
+                          onPressed: () {},
+                          child: Text(
+                            "edit",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
+                actions: [
+                  MaterialButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      color: Colors.red,
+                      child: Text(
+                        "Close",
+                        style: TextStyle(color: Colors.white),
+                      )),
+                ],
+              );
+            });
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  GestureDetector buildDeactivateAccountOptionRow(
+    BuildContext context,
+    String title,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(title),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [],
+                ),
+                actions: [
+                  Center(
+                    child: MaterialButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        color: Colors.red,
+                        child: Text(
+                          "Deactivate Account",
+                          style: TextStyle(color: Colors.white),
+                        )),
+                  ),
+                ],
+              );
+            });
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+class Profile extends StatefulWidget {
+  @override
+  _ProfileState createState() => _ProfileState();
+}
+
+class _ProfileState extends State<Profile> {
+  bool showPassword = false;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        backgroundColor: Color(0xff96D5EB),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 0),
+          child: Icon(
+            Icons.view_headline,
+            color: Colors.white,
+            size: 30,
+          ),
+        ),
+        title: Text(
+          'See',
+          style: TextStyle(
+            fontFamily: 'Lobster',
+            fontSize: 40,
+          ),
+        ),
+        actions: <Widget>[
+          Icon(
+            See.see,
+            size: 60,
+          ),
+        ],
+      ),
+      drawer: NavBar(),
+      body: Container(
+        padding: EdgeInsets.only(left: 16, top: 25, right: 16),
+          child: ListView(
+            children: [
+              Center(
+                child: Text(
+                  "Edit Profile",
+                  style: TextStyle(
+                    fontFamily: "RubikItalic",
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 15,
+              ),
+              Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 110,
+                      height: 110,
+                      decoration: BoxDecoration(
+                          border: Border.all(
+                              width: 4,
+                              color: Theme.of(context).scaffoldBackgroundColor),
+                          boxShadow: [
+                            BoxShadow(
+                                spreadRadius: 2,
+                                blurRadius: 10,
+                                color: Colors.black.withOpacity(0.1),
+                                offset: Offset(0, 10))
+                          ],
+                          shape: BoxShape.circle,
+                          image: DecorationImage(
+                              fit: BoxFit.cover,
+                              image: AssetImage("assets/images/user.jpg"),)),
+                    ),
+                    Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          height: 35,
+                          width: 35,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              width: 2,
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                            ),
+                            color: Colors.grey,
+                          ),
+                          child: Icon(
+                            Icons.edit,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        )),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 25,
+              ),
+              buildTextField("Full Name", "example", false),
+              buildTextField("E-mail", "abc@gmail.com", false),
+              buildTextField("Password", "********", true),
+              buildTextField("Location", "Ismalia, Egypt", false),
+              SizedBox(
+                height: 15,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  MaterialButton(
+                    height: 40,
+                    padding: EdgeInsets.symmetric(horizontal: 50),
+                    shape: RoundedRectangleBorder(
+                        side: BorderSide(
+                          color: Color(0xff96D5EB),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(20)),
+                    onPressed: () {Navigator.push(context,MaterialPageRoute(builder: (context) => Settings()));},
+                    child: Text("CANCEL",
+                        style: TextStyle(
+                            fontSize: 14,
+                            letterSpacing: 2.2,
+                            color: Colors.black)),
+                  ),
+                  MaterialButton(
+                    height: 40,
+                    onPressed: () {Navigator.push(context,MaterialPageRoute(builder: (context) => Settings()));},
+                    color: Color(0xff96D5EB),
+                    padding: EdgeInsets.symmetric(horizontal: 50),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    child: Text(
+                      "SAVE",
+                      style: TextStyle(
+                          fontSize: 14,
+                          letterSpacing: 2.2,
+                          color: Colors.white),
+                    ),
+                  )
+                ],
+              )
+            ],
+          ),
+        ),
+    );
+  }
+
+  Widget buildTextField(
+      String labelText, String placeholder, bool isPasswordTextField) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 35.0),
+      child: TextField(
+        obscureText: isPasswordTextField ? showPassword : false,
+        decoration: InputDecoration(
+            suffixIcon: isPasswordTextField
+                ? IconButton(
+                    onPressed: () {
+                      setState(() {
+                        showPassword = !showPassword;
+                      });
+                    },
+                    icon: Icon(
+                      showPassword ? Icons.visibility : Icons.visibility_off,
+                      color: Colors.grey,
+                    ),
+                  )
+                : null,
+            contentPadding: EdgeInsets.only(bottom: 3),
+            labelText: labelText,
+            labelStyle: TextStyle(
+              fontSize: 25,
+              color: Colors.black,
+            ),
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: placeholder,
+            hintStyle: TextStyle(
+              fontSize: 18,
+              color: Colors.grey,
+            )),
+      ),
+    );
+  }
+}
 
 class Location extends StatefulWidget {
   @override
@@ -940,9 +1573,9 @@ class _LocationState extends State<Location> {
           centerTitle: true,
           backgroundColor: Color(0xff96D5EB),
           leading: Padding(
-            padding: const EdgeInsets.only(left: 10),
+            padding: const EdgeInsets.only(left: 0),
             child: Icon(
-              Icons.settings,
+              Icons.view_headline,
               color: Colors.white,
               size: 30,
             ),
@@ -962,11 +1595,33 @@ class _LocationState extends State<Location> {
           ],
         ),
         drawer: NavBar(),
+        body: Container(
+          alignment: Alignment.center,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 20,
+              ),
+              Text(
+                "Home Location",
+                style: TextStyle(
+                  fontFamily: "RubikItalic",
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              Text("Ismalia,Egypt"),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
-
 
 class AboutDevice extends StatelessWidget {
   @override
@@ -975,22 +1630,51 @@ class AboutDevice extends StatelessWidget {
       home: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: Text(
-            "About Device",
-            style: TextStyle(
-              fontFamily: "RubikItalic",
-              fontSize: 30,
+          backgroundColor: Color(0xff96D5EB),
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 0),
+            child: Icon(
+              Icons.view_headline,
               color: Colors.white,
+              size: 30,
             ),
           ),
-          backgroundColor: Color(0xff96D5EB),
-          leading: IconButton(
-            icon: Icon(Icons.keyboard_backspace),
-            color: Colors.white,
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            iconSize: 30,
+          title: Text(
+            'See',
+            style: TextStyle(
+              fontFamily: 'Lobster',
+              fontSize: 40,
+            ),
+          ),
+          actions: <Widget>[
+            Icon(
+              See.see,
+              size: 60,
+            ),
+          ],
+        ),
+        drawer: NavBar(),
+        body: Container(
+          alignment: Alignment.center,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 20,
+              ),
+              Text(
+                "About Device",
+                style: TextStyle(
+                  fontFamily: "RubikItalic",
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              Text("qwertyuuiopasdfghjkkfjjfffffffffffffffffjfffffffffff"),
+            ],
           ),
         ),
       ),
@@ -1005,22 +1689,51 @@ class AboutUs extends StatelessWidget {
       home: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: Text(
-            "About Us",
-            style: TextStyle(
-              fontFamily: "RubikItalic",
-              fontSize: 30,
+          backgroundColor: Color(0xff96D5EB),
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 0),
+            child: Icon(
+              Icons.view_headline,
               color: Colors.white,
+              size: 30,
             ),
           ),
-          backgroundColor: Color(0xff96D5EB),
-          leading: IconButton(
-            icon: Icon(Icons.keyboard_backspace),
-            color: Colors.white,
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            iconSize: 30,
+          title: Text(
+            'See',
+            style: TextStyle(
+              fontFamily: 'Lobster',
+              fontSize: 40,
+            ),
+          ),
+          actions: <Widget>[
+            Icon(
+              See.see,
+              size: 60,
+            ),
+          ],
+        ),
+        drawer: NavBar(),
+        body: Container(
+          alignment: Alignment.center,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 20,
+              ),
+              Text(
+                "About Us",
+                style: TextStyle(
+                  fontFamily: "RubikItalic",
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              Text("qwertyuuiopasdfghjkkfjjfffffffffffffffffjfffffffffff"),
+            ],
           ),
         ),
       ),
@@ -1028,7 +1741,190 @@ class AboutUs extends StatelessWidget {
   }
 }
 
+class Barcode extends StatefulWidget {
+  @override
+  _Barcode createState() => _Barcode();
+}
 
+class _Barcode extends State<Barcode> {
+  String _scanBarcode = 'Unknown';
+  List barcodes=["none"];
+  final player = AudioCache();
+
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  Future<void> startBarcodeScanStream() async {
+    barcodes.clear();
+    FlutterBarcodeScanner.getBarcodeStreamReceiver(
+            '#ff6666', 'Cancel', true, ScanMode.BARCODE)
+        .listen((barcode) { print(barcode);
+    player.play('audios/audio.wav');
+    barcodes.add(barcode);
+    _scanBarcode=barcode;
+   });
+  }
+
+
+  // Platform messages are asynchronous, so we initialize in an async method.
+  Future<void> scanBarcodeNormal() async {
+    barcodes.clear();
+    String barcodeScanRes;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
+          '#ff6666', 'Cancel', true, ScanMode.BARCODE);
+      print(barcodeScanRes);
+      player.play('audios/audio.wav');
+    } on PlatformException {
+      barcodeScanRes = 'Failed to get platform version.';
+    }
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) return;
+    setState(() {
+      _scanBarcode= barcodeScanRes;
+    });
+    launchURL(barcodeScanRes);
+  }
+  void launchURL(url) async {
+    await canLaunch(url) ? await launch(url) : throw 'Could not launch $url';
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+        home: Scaffold(
+            appBar: AppBar(
+              centerTitle: true,
+              backgroundColor: Color(0xff96D5EB),
+              title: const Text(
+                'Barcode scan',
+                style: TextStyle(
+                  fontFamily: "RubikItalic",
+                  fontSize: 30,
+                  color: Colors.white,
+                ),
+              ),
+              leading: IconButton(
+                icon: Icon(Icons.keyboard_backspace),
+                color: Colors.white,
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                      context, MaterialPageRoute(builder: (context) => Home()));
+                },
+                iconSize: 30,
+              ),
+            ),
+            body: Builder(builder: (BuildContext context) {
+              return Container(
+                  alignment: Alignment.center,
+                  child: Flex(
+                      direction: Axis.vertical,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        MaterialButton(
+                          height: 50,
+                          minWidth: 300,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                          onPressed: () {
+                            scanBarcodeNormal();
+                          },
+                          color: Color(0xff96D5EB),
+                          child: Text(
+                            'Start single scan',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 25,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          height: 15,
+                        ),
+                        MaterialButton(
+                          height: 50,
+                          minWidth: 300,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                          onPressed: () {
+                            startBarcodeScanStream();
+                          },
+                          color: Color(0xff96D5EB),
+                          child: Text(
+                            'Start scan stream',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 25,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          height: 15,
+                        ),
+                        MaterialButton(
+                          height: 50,
+                            minWidth: 150,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                            ),
+                            color: Colors.red,
+                            child: Text(
+                              'Scan stream results',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 25,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          onPressed: () { showDialog<String>(
+                            context: context,
+                            builder: (BuildContext context) => AlertDialog(
+                              title:  Text('Scan Stream Results'),
+                              content: InkWell(child: Text('$barcodes\n',style: TextStyle(fontSize: 20,color: Colors.red,decoration: TextDecoration.underline,),),
+                                  onTap:() {launchURL(barcodes);}),
+                              actions: <Widget>[
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, 'OK'),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );}
+                        ),
+                        SizedBox(
+                          height: 30,
+                        ),
+                        Text('Scan result:',
+                          style: TextStyle(fontSize: 25),textAlign: TextAlign.left,),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        InkWell(child: Text('$_scanBarcode\n',style: TextStyle(fontSize: 30,color: Colors.red,decoration: TextDecoration.underline,),),
+                        onTap:() {launchURL(_scanBarcode);}),
+
+
+                      ]));
+            })));
+  }
+}
+
+/*audioplayers: ^0.20.1
+  import 'package:audioplayers/audioplayers.dart';
+  final player = AudioCache();
+  player.play('audio.wav');*/
 
 /*class Scanner extends StatefulWidget {
   @override
@@ -1152,167 +2048,3 @@ class _ScannerState extends State<Scanner> {
     });
   }
 }*/
-
-class Barcode extends StatefulWidget {
-  @override
-  _Barcode createState() => _Barcode();
-}
-
-class _Barcode extends State<Barcode> {
-  String _scanBarcode = 'Unknown';
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  Future<void> startBarcodeScanStream() async {
-    FlutterBarcodeScanner.getBarcodeStreamReceiver(
-            '#ff6666', 'Cancel', true, ScanMode.BARCODE)
-        .listen((barcode) => print(barcode));
-  }
-
-  Future<void> scanQR() async {
-    String barcodeScanRes;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-          '#ff6666', 'Cancel', true, ScanMode.QR);
-      print(barcodeScanRes);
-    } on PlatformException {
-      barcodeScanRes = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _scanBarcode = barcodeScanRes;
-    });
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> scanBarcodeNormal() async {
-    String barcodeScanRes;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-          '#ff6666', 'Cancel', true, ScanMode.BARCODE);
-      print(barcodeScanRes);
-    } on PlatformException {
-      barcodeScanRes = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _scanBarcode = barcodeScanRes;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-        home: Scaffold(
-            appBar: AppBar(
-              centerTitle: true,
-              backgroundColor: Color(0xff96D5EB),
-              title: const Text('Barcode scan',style: TextStyle(
-                fontFamily: "RubikItalic",
-                fontSize: 30,
-                color: Colors.white,),),
-              leading: IconButton(
-                icon: Icon(Icons.keyboard_backspace),
-                color: Colors.white,
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.push(
-                      context, MaterialPageRoute(builder: (context) => Home()));
-                },
-                iconSize: 30,
-              ),
-            ),
-            body: Builder(builder: (BuildContext context) {
-              return Container(
-                  alignment: Alignment.center,
-                  child: Flex(
-                      direction: Axis.vertical,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        MaterialButton(
-                          height: 50,
-                          minWidth: 300,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                          ),
-                          onPressed: () {
-                            scanBarcodeNormal();
-                          },
-                          color: Color(0xff96D5EB),
-                          child: Text(
-                            'Start barcode scan',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 25,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        SizedBox(
-                          height: 15,
-                        ),
-                        MaterialButton(
-                          height: 50,
-                          minWidth: 300,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                          ),
-                          onPressed: () {
-                            scanQR();
-                          },
-                          color: Color(0xff96D5EB),
-                          child: Text(
-                            'Start QR scan',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 25,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        SizedBox(
-                          height: 15,
-                        ),
-                        MaterialButton(
-                          height: 50,
-                          minWidth: 300,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                          ),
-                          onPressed: () {
-                            startBarcodeScanStream();
-                          },
-                          color: Color(0xff96D5EB),
-                          child: Text(
-                            'Start barcode scan stream',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 25,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        SizedBox(
-                          height: 15,
-                        ),
-                        Text('Scan result : $_scanBarcode\n',
-                            style: TextStyle(fontSize: 20))
-                      ]));
-            })));
-  }
-}

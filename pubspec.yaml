@@ -26,6 +26,8 @@ dependencies:
   qr_code_scanner: ^0.4.0
   url_launcher: ^6.0.3
   flutter_barcode_scanner: ^2.0.0
+  audioplayers: ^0.20.1
+
 
 
 dev_dependencies:
@@ -53,6 +55,8 @@ flutter:
     - assets/images/bg5.jpg
     - assets/images/bg6.jpg
     - assets/images/bg7.jpg
+    - assets/images/user.jpg
+    - assets/audios/audio.wav
   #  - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
