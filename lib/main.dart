@@ -12,19 +12,34 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
-
-void main() => runApp(
-      MaterialApp(
-        initialRoute: '/',
-        routes: {
-          '/': (context) => FirstScreen(),
-          '/second': (context) => Home(),
-          '/login': (context) => LogIn(),
-          '/sign': (context) => Sign(),
-        },
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
+}
+class MyApp extends StatelessWidget {
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Email And Password Login',
+      theme: ThemeData(
+        primarySwatch: Colors.red,
       ),
+      debugShowCheckedModeBanner: false,
+      home: FirstScreen(),
     );
+  }
+}
 
 class FirstScreen extends StatelessWidget {
   @override
@@ -124,9 +139,27 @@ class LogIn extends StatefulWidget {
 }
 
 class _LogIn extends State<LogIn> {
+  void initState()
+  {
+    super.initState();
+  }
+  final _formkey = GlobalKey<FormState>();
+
+  TextEditingController _emailcontroller = TextEditingController();
+
+  TextEditingController _passwordcontroller = TextEditingController();
+
   bool firstValue = false;
   bool secondValue = false;
   @override
+  void dispose()
+  {
+    _emailcontroller.dispose();
+
+    _passwordcontroller.dispose();
+
+    super.dispose();
+  }
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Welcome to Flutter',
@@ -154,142 +187,159 @@ class _LogIn extends State<LogIn> {
         ),
         body: SingleChildScrollView(
           child: Container(
-            child: Column(
-              children: <Widget>[
-                SizedBox(
-                  height: 25,
-                ),
-                Container(
-                  height: 65,
-                  child: Icon(
-                    See.see,
-                    size: 100,
-                    color: Colors.black,
-                    //color: Color(0xff4F7F8F),
+            child: Form(
+              key: _formkey,
+              child: Column(
+                children: <Widget>[
+                  SizedBox(
+                    height: 25,
                   ),
-                ),
-                Text(
-                  'See',
-                  style: TextStyle(
-                    fontSize: 50,
-                    fontFamily: 'Lobster',
-                    color: Colors.black,
-                    //color: Color(0xff4F7F8F),
-                  ),
-                ),
-                SizedBox(
-                  height: 30,
-                ),
-                Container(
-                  height: 50,
-                  padding: const EdgeInsets.only(
-                    left: 15,
-                    right: 15,
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Colors.grey,
-                          width: 2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Color(0xff96D5EB),
-                          width: 2,
-                        ),
-                      ),
-                      labelText: "Email or Username",
-                      hintText: "*****@abc.com",
-                      prefixIcon: Icon(Icons.person),
+                  Container(
+                    height: 65,
+                    child: Icon(
+                      See.see,
+                      size: 100,
+                      color: Colors.black,
+                      //color: Color(0xff4F7F8F),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12.0),
-                Container(
-                  height: 50,
-                  padding: const EdgeInsets.only(left: 15, right: 15),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Colors.grey,
-                          width: 2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Color(0xff96D5EB),
-                          width: 2,
-                        ),
-                      ),
-                      labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock),
-                    ),
-                    obscureText: true,
-                  ),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  children: <Widget>[
-                    SizedBox(
-                      width: 12,
-                    ),
-                    Checkbox(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(3)),),
-                      checkColor: Colors.white,
-                      value: this.firstValue,
-                      onChanged: (bool value) {
-                        setState(() {
-                          this.firstValue = value;
-                        });
-                      },
-                    ),
-                    Text(
-                      "Remember me",
-                      style: TextStyle(fontSize: 17, color: Colors.grey),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                MaterialButton(
-                  height: 40,
-                  minWidth: 200,
-                  shape: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                      borderSide: BorderSide(
-                        width: 0,
-                        color: Color(0xff96D5EB),
-                      )),
-                  color: Color(0xff96D5EB),
-                  child: Text(
-                    'LOG IN',
+                  Text(
+                    'See',
                     style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.white,
+                      fontSize: 50,
+                      fontFamily: 'Lobster',
+                      color: Colors.black,
+                      //color: Color(0xff4F7F8F),
                     ),
                   ),
-                  onPressed: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => Home()));
-                  },
-                ),
-              ],
+                  SizedBox(
+                    height: 30,
+                  ),
+                  Container(
+                    height: 50,
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                    ),
+                    child: TextFormField(
+                      controller: _emailcontroller,
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Color(0xff96D5EB),
+                            width: 2,
+                          ),
+                        ),
+                        labelText: "Email or Username",
+                        hintText: "*****@abc.com",
+                        prefixIcon: Icon(Icons.person),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12.0),
+                  Container(
+                    height: 50,
+                    padding: const EdgeInsets.only(left: 15, right: 15),
+                    child: TextFormField(
+                      controller: _passwordcontroller,
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Color(0xff96D5EB),
+                            width: 2,
+                          ),
+                        ),
+                        labelText: 'Password',
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                      obscureText: true,
+                    ),
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    children: <Widget>[
+                      SizedBox(
+                        width: 12,
+                      ),
+                      Checkbox(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(3)),),
+                        checkColor: Colors.white,
+                        value: this.firstValue,
+                        onChanged: (bool value) {
+                          setState(() {
+
+                            this.firstValue = value;
+                          });
+                        },
+                      ),
+                      Text(
+                        "Remember me",
+                        style: TextStyle(fontSize: 17, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  MaterialButton(
+                    height: 40,
+                    minWidth: 200,
+                    shape: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                        borderSide: BorderSide(
+                          width: 0,
+                          color: Color(0xff96D5EB),
+                        )),
+                    color: Color(0xff96D5EB),
+                    child: Text(
+                      'LOG IN',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                      onPressed: () async {
+                        if(_formkey.currentState.validate()){
+                          var result = await FirebaseAuth.instance.signInWithEmailAndPassword(email: _emailcontroller.text, password: _passwordcontroller.text);
+                          if(result != null){
+                            print(result);
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => Home()),
+                            );
+                          }else{
+                            print('user not found');
+                          }
+                        }
+                      }
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+
 }
 
 class Sign extends StatefulWidget {
@@ -301,6 +351,28 @@ class _SignUp extends State<Sign> {
   //bool _value = false;
   int val = -1;
   bool _isObscure = true;
+  void initState()
+  {
+    super.initState();
+  }
+
+
+  final _formkey = GlobalKey<FormState>();
+
+  TextEditingController _emailcontroller = TextEditingController();
+  TextEditingController _passwordcontroller = TextEditingController();
+  TextEditingController _accounttypecontroller = TextEditingController();
+  TextEditingController _checkpasscontroller = TextEditingController();
+
+  @override
+  void dispose()
+  {
+    _emailcontroller.dispose();
+
+    _passwordcontroller.dispose();
+
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -328,188 +400,216 @@ class _SignUp extends State<Sign> {
         ),
         body: SingleChildScrollView(
           child: Container(
-            child: Column(
-              children: <Widget>[
-                SizedBox(
-                  height: 15,
-                ),
-                Container(
-                  height: 60,
-                  child: Icon(
-                    See.see,
-                    size: 80,
+            child: Form(
+              key: _formkey,
+              child: Column(
+                children: <Widget>[
+                  SizedBox(
+                    height: 15,
                   ),
-                ),
-                Text(
-                  'See',
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontFamily: 'Lobster',
-                  ),
-                ),
-                SizedBox(
-                  height: 30,
-                ),
-                Container(
-                  height: 50,
-                  padding: const EdgeInsets.only(
-                    left: 15,
-                    right: 15,
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Colors.grey,
-                          width: 2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Color(0xff96D5EB),
-                          width: 2,
-                        ),
-                      ),
-                      labelText: "Email or Username",
-                      hintText: "*****@abc.com",
-                      prefixIcon: Icon(Icons.person),
+                  Container(
+                    height: 60,
+                    child: Icon(
+                      See.see,
+                      size: 80,
                     ),
                   ),
-                ),
-                const SizedBox(height: 12.0),
-                Container(
-                  height: 50,
-                  padding: const EdgeInsets.only(left: 15, right: 15),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Colors.grey,
-                          width: 2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Color(0xff96D5EB),
-                          width: 2,
-                        ),
-                      ),
-                      labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock),
-                    ),
-                    obscureText: true,
-                  ),
-                ),
-                const SizedBox(height: 12.0),
-                Container(
-                  height: 50,
-                  padding: const EdgeInsets.only(left: 15, right: 15),
-                  child: TextField(
-                    obscureText: _isObscure,
-                    decoration: InputDecoration(
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Colors.grey,
-                          width: 2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(
-                          color: Color(0xff96D5EB),
-                          width: 2,
-                        ),
-                      ),
-                      labelText: 'Confirm Password',
-                      prefixIcon: Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isObscure ? Icons.visibility : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isObscure = !_isObscure;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 12,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: ListTile(
-                        title: Text(
-                          "Blind",
-                          style: TextStyle(fontSize: 20, color: Colors.grey),
-                        ),
-                        leading: Radio(
-                          value: 1,
-                          groupValue: val,
-                          onChanged: (value) {
-                            setState(() {
-                              val = value;
-                            });
-                          },
-                          activeColor: Color(0xff96D5EB),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: ListTile(
-                        title: Text(
-                          "Friend",
-                          style: TextStyle(fontSize: 20, color: Colors.grey),
-                        ),
-                        leading: Radio(
-                          value: 2,
-                          groupValue: val,
-                          onChanged: (value) {
-                            setState(() {
-                              val = value;
-                            });
-                          },
-                          activeColor: Color(0xff96D5EB),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 18,
-                ),
-                MaterialButton(
-                  height: 40,
-                  minWidth: 200,
-                  shape: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                      borderSide: BorderSide(
-                        width: 0,
-                        color: Color(0xff96D5EB),
-                      )),
-                  color: Color(0xff96D5EB),
-                  child: Text(
-                    'SIGN UP',
+                  Text(
+                    'See',
                     style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.white,
+                      fontSize: 40,
+                      fontFamily: 'Lobster',
                     ),
                   ),
-                  onPressed: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => Home()));
-                  },
-                ),
-              ],
+                  SizedBox(
+                    height: 30,
+                  ),
+                  Container(
+                    height: 50,
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                    ),
+                    child: TextFormField(
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Color(0xff96D5EB),
+                            width: 2,
+                          ),
+                        ),
+                        labelText: "Email or Username",
+                        hintText: "*****@abc.com",
+                        prefixIcon: Icon(Icons.person),
+                      ),
+                      controller: _emailcontroller,
+                    ),
+                  ),
+                  const SizedBox(height: 12.0),
+                  Container(
+                    height: 50,
+                    padding: const EdgeInsets.only(left: 15, right: 15),
+                    child: TextFormField(
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Color(0xff96D5EB),
+                            width: 2,
+                          ),
+                        ),
+                        labelText: 'Password',
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                      obscureText: true,
+                        controller: _passwordcontroller,
+                    ),
+                  ),
+                  const SizedBox(height: 12.0),
+                  Container(
+                    height: 50,
+                    padding: const EdgeInsets.only(left: 15, right: 15),
+                    child: TextField(
+                      controller: _checkpasscontroller,
+                      obscureText: _isObscure,
+                      decoration: InputDecoration(
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Color(0xff96D5EB),
+                            width: 2,
+                          ),
+                        ),
+                        labelText: 'Confirm Password',
+                        prefixIcon: Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isObscure ? Icons.visibility : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isObscure = !_isObscure;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 12,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ListTile(
+                          title: Text(
+                            "Blind",
+                            style: TextStyle(fontSize: 20, color: Colors.grey),
+                          ),
+                          leading: Radio(
+                            value: 1,
+                            groupValue: val,
+                            onChanged: (value) {
+                              setState(() {
+                                val = value;
+                                _accounttypecontroller.text="Blind";
+                              });
+                            },
+                            activeColor: Color(0xff96D5EB),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: ListTile(
+                          title: Text(
+                            "Friend",
+                            style: TextStyle(fontSize: 20, color: Colors.grey),
+                          ),
+                          leading: Radio(
+                            value: 2,
+                            groupValue: val,
+                            onChanged: (value) {
+                              setState(() {
+                                val = value;
+                                _accounttypecontroller.text="Friend";
+                              });
+                            },
+                            activeColor: Color(0xff96D5EB),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 18,
+                  ),
+                  MaterialButton(
+                    height: 40,
+                    minWidth: 200,
+                    shape: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                        borderSide: BorderSide(
+                          width: 0,
+                          color: Color(0xff96D5EB),
+                        )),
+                    color: Color(0xff96D5EB),
+                    child: Text(
+                      'SIGN UP',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                    onPressed: () async{
+                      if(_checkpasscontroller!=_passwordcontroller){
+                        print("wrong password");
+                      }
+                      if(_formkey.currentState.validate()){
+                        var result = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: _emailcontroller.text, password: _passwordcontroller.text);
+                        User user = result.user;
+                        if(result != null)
+                        {
+                          var userInfo = FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+                            'email':_emailcontroller.text,
+                            'account type':_accounttypecontroller.text,
+                            'password':_passwordcontroller.text,
+                            'userid': user.uid,
+                          });
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => Home()),
+                          );
+                        }else{
+                          print('please try later');
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -530,7 +630,10 @@ class _HomeScreen extends State<Home> {
   bool b4 = false;
   bool b5 = false;
   bool b6 = false;
-
+  @override
+  //void initState() {
+    //super.initState();
+  //}
 
   @override
   Widget build(BuildContext context) {
