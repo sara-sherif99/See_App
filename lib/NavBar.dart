@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:graduation/icons.dart';
 import 'package:graduation/see.dart';
@@ -66,7 +67,9 @@ class NavBar extends StatelessWidget {
               title: Text('Log Out',style: TextStyle(fontSize: 18,color: Colors.black),),
               leading: Icon(Icons.exit_to_app,size: 25,color: Colors.black,),
               onTap: () {
+                FirebaseAuth.instance.signOut();
                 Navigator.push(context,MaterialPageRoute(builder: (context) => main.FirstScreen()));
+
               },
             ),
             SizedBox(height: 10,)
