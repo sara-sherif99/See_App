@@ -1,4 +1,6 @@
-import 'dart:ui';
+import 'dart:async';
+import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/cupertino.dart';
@@ -17,10 +19,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crypto/crypto.dart';
 
+String finalEmail;
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -36,12 +40,82 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.red,
       ),
       debugShowCheckedModeBanner: false,
-      home: FirstScreen(),
+      home: Splash(),
+    );
+  }
+}
+class Splash extends StatefulWidget {
+  const Splash({Key key}) : super(key: key);
+
+  @override
+  _SplashState createState() => _SplashState();
+}
+
+class _SplashState extends State<Splash> {
+  @override
+  void initState(){
+    getValidationData().whenComplete(() async{
+      Timer(Duration(seconds: 2),()=>Navigator.push(context,MaterialPageRoute(builder: (context) => finalEmail == null? FirstScreen():Home())));
+    });
+    super.initState();
+  }
+  Future getValidationData() async{
+    final SharedPreferences sharedPreferences= await SharedPreferences.getInstance();
+    var obtainedEmail = sharedPreferences.getString("email");
+    setState(() {
+      finalEmail = obtainedEmail;
+    });
+    print(finalEmail);
+  }
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Welcome to Flutter',
+      home: Scaffold(
+        body: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              //colorFilter: new ColorFilter.mode(Colors.white24.withOpacity(0.9), BlendMode.dstATop),
+              image: AssetImage("assets/images/bg5.jpg"),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Container(
+                height: 100,
+                child: Icon(
+                  See.see,
+                  size: 150,
+                  color: Colors.white,
+                  //color: Color(0xff4F7F8F),
+                ),
+              ),
+              Text(
+                'See',
+                style: TextStyle(
+                  fontSize: 60,
+                  fontFamily: 'Lobster',
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
-class FirstScreen extends StatelessWidget {
+class FirstScreen extends StatefulWidget {
+  @override
+  State<FirstScreen> createState() => _FirstScreenState();
+}
+
+class _FirstScreenState extends State<FirstScreen> {
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -279,7 +353,7 @@ class _LogIn extends State<LogIn> {
                       SizedBox(
                         width: 12,
                       ),
-                      Checkbox(
+                      /*Checkbox(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(3)),),
                         checkColor: Colors.white,
                         value: this.firstValue,
@@ -293,7 +367,7 @@ class _LogIn extends State<LogIn> {
                       Text(
                         "Remember me",
                         style: TextStyle(fontSize: 17, color: Colors.grey),
-                      ),
+                      ),*/
                     ],
                   ),
                   SizedBox(
@@ -329,6 +403,8 @@ class _LogIn extends State<LogIn> {
                             print('user not found');
                           }
                         }
+                        final SharedPreferences sharedPreferences= await SharedPreferences.getInstance();
+                        sharedPreferences.setString("email", _emailcontroller.text);
                       }
                   ),
                 ],
@@ -349,13 +425,13 @@ class Sign extends StatefulWidget {
 
 class _SignUp extends State<Sign> {
   //bool _value = false;
+  Hash hasher = sha512;
   int val = -1;
   bool _isObscure = true;
   void initState()
   {
     super.initState();
   }
-
 
   final _formkey = GlobalKey<FormState>();
 
@@ -365,6 +441,7 @@ class _SignUp extends State<Sign> {
   TextEditingController _checkpasscontroller = TextEditingController();
 
   @override
+
   void dispose()
   {
     _emailcontroller.dispose();
@@ -584,19 +661,36 @@ class _SignUp extends State<Sign> {
                       ),
                     ),
                     onPressed: () async{
+
+                      final Random _random = Random.secure();
+                      String salting([int length = 2]) {
+                        var values = List<int>.generate(length, (i) => _random.nextInt(256));
+
+                        return base64Url.encode(values);
+                      }
+                      String salt=salting().toString();
+                      String hashedPass=salt+_passwordcontroller.text;
+                      var bytes = utf8.encode(hashedPass); // data being hashed
+                      var digest = hasher.convert(bytes);
+
+                      final SharedPreferences sharedPreferences= await SharedPreferences.getInstance();
+                      sharedPreferences.setString("email", _emailcontroller.text);
+
                       if(_checkpasscontroller!=_passwordcontroller){
                         print("wrong password");
                       }
                       if(_formkey.currentState.validate()){
                         var result = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: _emailcontroller.text, password: _passwordcontroller.text);
                         User user = result.user;
+                        print(hashedPass);
                         if(result != null)
                         {
                           var userInfo = FirebaseFirestore.instance.collection('users').doc(user.uid).set({
                             'email':_emailcontroller.text,
                             'account type':_accounttypecontroller.text,
-                            'password':_passwordcontroller.text,
+                            'password':digest.toString(),
                             'userid': user.uid,
+                            'salt':salt
                           });
                           Navigator.pushReplacement(
                             context,
@@ -2023,6 +2117,7 @@ class _Barcode extends State<Barcode> {
             })));
   }
 }
+
 
 /*audioplayers: ^0.20.1
   import 'package:audioplayers/audioplayers.dart';

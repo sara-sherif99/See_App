@@ -1,10 +1,10 @@
 import 'dart:math';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:graduation/icons.dart';
 import 'package:graduation/see.dart';
 import 'package:graduation/main.dart'as main;
+import 'package:shared_preferences/shared_preferences.dart';
 class NavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -66,11 +66,12 @@ class NavBar extends StatelessWidget {
             ListTile(
               title: Text('Log Out',style: TextStyle(fontSize: 18,color: Colors.black),),
               leading: Icon(Icons.exit_to_app,size: 25,color: Colors.black,),
-              onTap: () {
+              onTap: () async{
                 FirebaseAuth.instance.signOut();
                 Navigator.push(context,MaterialPageRoute(builder: (context) => main.FirstScreen()));
-
-              },
+                final SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+                sharedPreferences.remove("email");
+                },
             ),
             SizedBox(height: 10,)
 
