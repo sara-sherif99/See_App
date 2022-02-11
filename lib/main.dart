@@ -10,6 +10,7 @@ import 'package:graduation/NavBar.dart';
 import 'package:flutter/services.dart';
 //import 'package:graduation/icons.dart';
 import 'package:graduation/see.dart';
+import 'package:location/location.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
@@ -19,17 +20,119 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:flash/flash.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart' as geol;
+import 'package:geocoding/geocoding.dart'as geoc;
+import 'package:intl/intl.dart';
+import 'package:location/location.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
+import 'dart:async';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:path/path.dart' as Path;
 
+class MapUtils {
+
+  MapUtils._();
+
+  static Future<void> openMap(double latitude, double longitude) async {
+    String googleUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+    if (await canLaunch(googleUrl)) {
+      await launch(googleUrl);
+    } else {
+      throw 'Could not open the map.';
+    }
+  }
+}
+
+var currentUser = FirebaseAuth.instance.currentUser;
 String finalEmail;
-void main() async{
+
+
+var usersList = <String>[];
+Future getUsers() async {
+  var info = FirebaseFirestore.instance;
+  await for (var snapshot in info.collection('users').snapshots()) {
+    for (var f in snapshot.docs) {
+      usersList.add(f.get("email"));
+    }
+    print(usersList);
+  }
+}
+
+var friendsList = <String>[];
+Future getFriends() async {
+  var info = FirebaseFirestore.instance;
+  await for (var snapshot
+      in info.collection('users').doc(currentUser.uid).snapshots()) {
+    for (var f in snapshot.get('Linked Accounts')) {
+      if (friendsList.contains(f)) {
+      } else {
+        friendsList.add(f);
+      }
+    }
+    print(friendsList);
+  }
+}
+
+Future goHome() async {
+  var lat,long;
+  var info = FirebaseFirestore.instance;
+  await for (var snapshot
+  in info.collection('users').doc(currentUser.uid).snapshots()) {
+    lat = snapshot.get('Home latitude');
+    print("lat");
+    print(lat);
+    long = snapshot.get('Home longitude');
+    print("long");
+    print(long);
+    MapUtils.openMap(lat,long);
+  }
+
+
+}
+
+var un, cp, pn, bt, mc, db, ni,pp,accountType;
+Future profileInfo() async {
+  var info = FirebaseFirestore.instance;
+  await for (var snapshot
+  in info.collection('users').doc(currentUser.uid).snapshots()) {
+    un = snapshot.get('Username');
+    cp = snapshot.get('password');
+    pn = snapshot.get('Phone Number');
+    bt = snapshot.get('Blood Type');
+    mc = snapshot.get('Medical Conditions');
+    db = snapshot.get('Date of Birth');
+    ni = snapshot.get('National ID');
+  }
+  print("cp");
+  print(cp);
+}
+
+void showToast(msg) {
+  Fluttertoast.showToast(
+    msg: msg,
+    fontSize: 18,
+    gravity: ToastGravity.BOTTOM,
+    backgroundColor: Colors.red,
+    textColor: Colors.white,
+  );
+}
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  getFriends();
   runApp(MyApp());
 }
+
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
@@ -44,6 +147,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 class Splash extends StatefulWidget {
   const Splash({Key key}) : super(key: key);
 
@@ -53,20 +157,42 @@ class Splash extends StatefulWidget {
 
 class _SplashState extends State<Splash> {
   @override
-  void initState(){
-    getValidationData().whenComplete(() async{
-      Timer(Duration(seconds: 2),()=>Navigator.push(context,MaterialPageRoute(builder: (context) => finalEmail == null? FirstScreen():Home())));
+  void initState() {
+    getValidationData().whenComplete(() async {
+      Timer(
+          Duration(seconds: 1),
+          () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                  (finalEmail == null )? FirstScreen() : (accountType == "Blind")? Home(): HomeF())));
     });
     super.initState();
   }
-  Future getValidationData() async{
-    final SharedPreferences sharedPreferences= await SharedPreferences.getInstance();
+
+  Future getValidationData() async {
+    final SharedPreferences sharedPreferences =
+        await SharedPreferences.getInstance();
     var obtainedEmail = sharedPreferences.getString("email");
+    currentUser = FirebaseAuth.instance.currentUser;
     setState(() {
       finalEmail = obtainedEmail;
     });
+    print("finalEmail");
     print(finalEmail);
+    print(currentUser.uid);
+    await for (var snapshot
+    in FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots()) {
+      un = snapshot.get('Username');
+      pp  = snapshot.get('Profile Picture');
+      accountType  = snapshot.get('account type');
+      print(un);
+    break;
+    }
+
+
   }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -115,7 +241,6 @@ class FirstScreen extends StatefulWidget {
 }
 
 class _FirstScreenState extends State<FirstScreen> {
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -213,27 +338,28 @@ class LogIn extends StatefulWidget {
 }
 
 class _LogIn extends State<LogIn> {
-  void initState()
-  {
+  void initState() {
     super.initState();
   }
+
   final _formkey = GlobalKey<FormState>();
 
   TextEditingController _emailcontroller = TextEditingController();
 
   TextEditingController _passwordcontroller = TextEditingController();
 
-  bool firstValue = false;
-  bool secondValue = false;
+  //bool firstValue = false;
+  //bool secondValue = false;
+  bool e = false;
   @override
-  void dispose()
-  {
+  void dispose() {
     _emailcontroller.dispose();
 
     _passwordcontroller.dispose();
 
     super.dispose();
   }
+
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Welcome to Flutter',
@@ -290,7 +416,6 @@ class _LogIn extends State<LogIn> {
                     height: 30,
                   ),
                   Container(
-                    height: 50,
                     padding: const EdgeInsets.only(
                       left: 15,
                       right: 15,
@@ -298,10 +423,19 @@ class _LogIn extends State<LogIn> {
                     child: TextFormField(
                       controller: _emailcontroller,
                       decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                            vertical: 5.0, horizontal: 5.0),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(10)),
                           borderSide: BorderSide(
                             color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.red,
                             width: 2,
                           ),
                         ),
@@ -316,19 +450,31 @@ class _LogIn extends State<LogIn> {
                         hintText: "*****@abc.com",
                         prefixIcon: Icon(Icons.person),
                       ),
+                      validator: (value) {
+                        if (value.isEmpty) return 'Please enter email';
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(height: 12.0),
                   Container(
-                    height: 50,
                     padding: const EdgeInsets.only(left: 15, right: 15),
                     child: TextFormField(
                       controller: _passwordcontroller,
                       decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                            vertical: 5.0, horizontal: 5.0),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(10)),
                           borderSide: BorderSide(
                             color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.red,
                             width: 2,
                           ),
                         ),
@@ -343,6 +489,10 @@ class _LogIn extends State<LogIn> {
                         prefixIcon: Icon(Icons.lock),
                       ),
                       obscureText: true,
+                      validator: (value) {
+                        if (value.isEmpty) return 'Please enter password';
+                        return null;
+                      },
                     ),
                   ),
                   SizedBox(
@@ -374,39 +524,55 @@ class _LogIn extends State<LogIn> {
                     height: 20,
                   ),
                   MaterialButton(
-                    height: 40,
-                    minWidth: 200,
-                    shape: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(8)),
-                        borderSide: BorderSide(
-                          width: 0,
-                          color: Color(0xff96D5EB),
-                        )),
-                    color: Color(0xff96D5EB),
-                    child: Text(
-                      'LOG IN',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white,
+                      height: 40,
+                      minWidth: 200,
+                      shape: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                          borderSide: BorderSide(
+                            width: 0,
+                            color: Color(0xff96D5EB),
+                          )),
+                      color: Color(0xff96D5EB),
+                      child: Text(
+                        'LOG IN',
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
                       onPressed: () async {
-                        if(_formkey.currentState.validate()){
-                          var result = await FirebaseAuth.instance.signInWithEmailAndPassword(email: _emailcontroller.text, password: _passwordcontroller.text);
-                          if(result != null){
-                            print(result);
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => Home()),
-                            );
-                          }else{
-                            print('user not found');
+                        try {
+                          if (_formkey.currentState.validate()) {
+                            var result = await FirebaseAuth.instance
+                                .signInWithEmailAndPassword(
+                                    email: _emailcontroller.text,
+                                    password: _passwordcontroller.text);
+                            if (result != null) {
+                              print(result);
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => Splash()),
+                              );
+                            } else {
+                              showToast("User Not Found");
+                              print('user not found');
+                            }
                           }
+                          final SharedPreferences sharedPreferences =
+                              await SharedPreferences.getInstance();
+                          sharedPreferences.setString(
+                              "email", _emailcontroller.text);
+                        } on FirebaseAuthException catch (error) {
+                          var message =
+                              'An error occurred, please check your credentials!';
+                          if (error.message != null) {
+                            message = error.message;
+                            showToast(message);
+                          }
+                          print(message);
                         }
-                        final SharedPreferences sharedPreferences= await SharedPreferences.getInstance();
-                        sharedPreferences.setString("email", _emailcontroller.text);
-                      }
-                  ),
+                      }),
                 ],
               ),
             ),
@@ -415,7 +581,6 @@ class _LogIn extends State<LogIn> {
       ),
     );
   }
-
 }
 
 class Sign extends StatefulWidget {
@@ -428,8 +593,7 @@ class _SignUp extends State<Sign> {
   Hash hasher = sha512;
   int val = -1;
   bool _isObscure = true;
-  void initState()
-  {
+  void initState() {
     super.initState();
   }
 
@@ -441,15 +605,16 @@ class _SignUp extends State<Sign> {
   TextEditingController _checkpasscontroller = TextEditingController();
 
   @override
-
-  void dispose()
-  {
+  void dispose() {
     _emailcontroller.dispose();
 
     _passwordcontroller.dispose();
 
+    _checkpasscontroller.dispose();
+
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -502,17 +667,25 @@ class _SignUp extends State<Sign> {
                     height: 30,
                   ),
                   Container(
-                    height: 50,
                     padding: const EdgeInsets.only(
                       left: 15,
                       right: 15,
                     ),
                     child: TextFormField(
                       decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                            vertical: 5.0, horizontal: 5.0),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(10)),
                           borderSide: BorderSide(
                             color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.red,
                             width: 2,
                           ),
                         ),
@@ -528,18 +701,32 @@ class _SignUp extends State<Sign> {
                         prefixIcon: Icon(Icons.person),
                       ),
                       controller: _emailcontroller,
+                      validator: (value) {
+                        if (value.isEmpty || !value.contains('@')) {
+                          return 'Please enter a valid email address.';
+                        }
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(height: 12.0),
                   Container(
-                    height: 50,
                     padding: const EdgeInsets.only(left: 15, right: 15),
                     child: TextFormField(
                       decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                            vertical: 5.0, horizontal: 5.0),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(10)),
                           borderSide: BorderSide(
                             color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.red,
                             width: 2,
                           ),
                         ),
@@ -554,21 +741,35 @@ class _SignUp extends State<Sign> {
                         prefixIcon: Icon(Icons.lock),
                       ),
                       obscureText: true,
-                        controller: _passwordcontroller,
+                      controller: _passwordcontroller,
+                      validator: (value) {
+                        if (value.isEmpty || value.length < 6) {
+                          return 'Password must be at least 6 characters long.';
+                        }
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(height: 12.0),
                   Container(
-                    height: 50,
                     padding: const EdgeInsets.only(left: 15, right: 15),
-                    child: TextField(
+                    child: TextFormField(
                       controller: _checkpasscontroller,
                       obscureText: _isObscure,
                       decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                            vertical: 5.0, horizontal: 5.0),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(10)),
                           borderSide: BorderSide(
                             color: Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                          borderSide: BorderSide(
+                            color: Colors.red,
                             width: 2,
                           ),
                         ),
@@ -583,7 +784,9 @@ class _SignUp extends State<Sign> {
                         prefixIcon: Icon(Icons.lock),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _isObscure ? Icons.visibility : Icons.visibility_off,
+                            _isObscure
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                           ),
                           onPressed: () {
                             setState(() {
@@ -592,6 +795,13 @@ class _SignUp extends State<Sign> {
                           },
                         ),
                       ),
+                      validator: (value) {
+                        if (value.isEmpty ||
+                            value != _passwordcontroller.text) {
+                          return 'Password does not match.';
+                        }
+                        return null;
+                      },
                     ),
                   ),
                   SizedBox(
@@ -612,7 +822,7 @@ class _SignUp extends State<Sign> {
                             onChanged: (value) {
                               setState(() {
                                 val = value;
-                                _accounttypecontroller.text="Blind";
+                                _accounttypecontroller.text = "Blind";
                               });
                             },
                             activeColor: Color(0xff96D5EB),
@@ -631,7 +841,7 @@ class _SignUp extends State<Sign> {
                             onChanged: (value) {
                               setState(() {
                                 val = value;
-                                _accounttypecontroller.text="Friend";
+                                _accounttypecontroller.text = "Friend";
                               });
                             },
                             activeColor: Color(0xff96D5EB),
@@ -660,45 +870,75 @@ class _SignUp extends State<Sign> {
                         color: Colors.white,
                       ),
                     ),
-                    onPressed: () async{
-
-                      final Random _random = Random.secure();
-                      String salting([int length = 2]) {
-                        var values = List<int>.generate(length, (i) => _random.nextInt(256));
-
-                        return base64Url.encode(values);
-                      }
-                      String salt=salting().toString();
-                      String hashedPass=salt+_passwordcontroller.text;
-                      var bytes = utf8.encode(hashedPass); // data being hashed
-                      var digest = hasher.convert(bytes);
-
-                      final SharedPreferences sharedPreferences= await SharedPreferences.getInstance();
-                      sharedPreferences.setString("email", _emailcontroller.text);
-
-                      if(_checkpasscontroller!=_passwordcontroller){
-                        print("wrong password");
-                      }
-                      if(_formkey.currentState.validate()){
-                        var result = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: _emailcontroller.text, password: _passwordcontroller.text);
-                        User user = result.user;
-                        print(hashedPass);
-                        if(result != null)
-                        {
-                          var userInfo = FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-                            'email':_emailcontroller.text,
-                            'account type':_accounttypecontroller.text,
-                            'password':digest.toString(),
-                            'userid': user.uid,
-                            'salt':salt
-                          });
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => Home()),
-                          );
-                        }else{
-                          print('please try later');
+                    onPressed: () async {
+                      try {
+                        if (_accounttypecontroller.text.isEmpty) {
+                          showToast("Choose account type");
                         }
+                        final Random _random = Random.secure();
+                        String salting([int length = 2]) {
+                          var values = List<int>.generate(
+                              length, (i) => _random.nextInt(256));
+
+                          return base64Url.encode(values);
+                        }
+
+                        String salt = salting().toString();
+                        String hashedPass = salt + _passwordcontroller.text;
+                        var bytes =
+                            utf8.encode(hashedPass); // data being hashed
+                        var digest = hasher.convert(bytes);
+
+                        final SharedPreferences sharedPreferences =
+                            await SharedPreferences.getInstance();
+                        sharedPreferences.setString(
+                            "email", _emailcontroller.text);
+
+                        if (_formkey.currentState.validate() &&
+                            _passwordcontroller.text ==
+                                _checkpasscontroller.text &&
+                            _accounttypecontroller.text.isNotEmpty) {
+                          var result = await FirebaseAuth.instance
+                              .createUserWithEmailAndPassword(
+                                  email: _emailcontroller.text,
+                                  password: _passwordcontroller.text);
+                          User user = result.user;
+                          print(hashedPass);
+                          if (result != null) {
+                            var userInfo = FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user.uid)
+                                .set({
+                              'email': _emailcontroller.text,
+                              'userid': user.uid,
+                              'Username': _emailcontroller.text.split("@")[0],
+                              'salt': salt,
+                              'password': digest.toString(),
+                              'account type': _accounttypecontroller.text,
+                              'Linked Accounts': [],
+                              'Phone Number':"",
+                              'Date of Birth':"",
+                              'National ID': "",
+                              'Blood Type':"",
+                              'Medical Conditions':"",
+                              'Profile Picture':"",
+                            });
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => Splash()),
+                            );
+                          } else {
+                            print('please try later');
+                          }
+                        }
+                      } on FirebaseAuthException catch (error) {
+                        var message =
+                            'An error occurred, please check your credentials!';
+                        if (error.message != null) {
+                          message = error.message;
+                          showToast(message);
+                        }
+                        print(message);
                       }
                     },
                   ),
@@ -706,6 +946,68 @@ class _SignUp extends State<Sign> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class HomeF extends StatefulWidget {
+  @override
+  _HomeFState createState() => _HomeFState();
+}
+
+class _HomeFState extends State<HomeF> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        backgroundColor: Color(0xff96D5EB),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 0),
+          child: Icon(
+            Icons.view_headline,
+            color: Colors.white,
+            size: 30,
+          ),
+        ),
+        title: Text(
+          'See',
+          style: TextStyle(
+            fontFamily: 'Lobster',
+            fontSize: 40,
+          ),
+        ),
+        actions: <Widget>[
+          Icon(
+            See.see,
+            size: 60,
+          ),
+        ],
+      ),
+      drawer: NavBar(),
+      body: Container(
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 20,
+            ),
+            Text(
+              "Home",
+              style: TextStyle(
+                fontFamily: "RubikItalic",
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            SizedBox(
+              height: 20,
+            ),
+            Text("qwerty"),
+          ],
         ),
       ),
     );
@@ -726,7 +1028,7 @@ class _HomeScreen extends State<Home> {
   bool b6 = false;
   @override
   //void initState() {
-    //super.initState();
+  //super.initState();
   //}
 
   @override
@@ -934,7 +1236,13 @@ class _HomeScreen extends State<Home> {
                       setState(() {
                         b5 = !b5;
                       });
-                    },
+                      Timer(
+                          Duration(seconds: 2),
+                              () => setState(() {
+                                b5 = !b5;
+                              }),);
+                      goHome();
+                       },
                   ),
                   MaterialButton(
                     height: 150,
@@ -1013,7 +1321,18 @@ class Friends extends StatefulWidget {
 }
 
 class _FriendsState extends State<Friends> {
+  TextEditingController friends = TextEditingController();
+
+  void clearText() {
+    friends.clear();
+  }
+
   @override
+  /*void initState() {
+    super.initState();
+    getFriends();
+  }*/
+
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
@@ -1063,63 +1382,18 @@ class _FriendsState extends State<Friends> {
                   ),
                   Container(
                     padding: new EdgeInsets.all(20.0),
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15.0),
-                          side: BorderSide(
-                            color: Color(0xff96D5EB),
-                            width: 2,
-                          )),
-                      color: Colors.white,
-                      child: Column(
-                        children: <Widget>[
-                          SizedBox(
-                            height: 10,
-                          ),
-                          const ListTile(
-                            leading: Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Color(0xff96D5EB),
-                            ),
-                            title: Text('Username',
-                                style: TextStyle(
-                                  fontSize: 22.0,
-                                  color: Color(0xff96D5EB),
-                                )),
-                            subtitle: Text('email@abx.com',
-                                style: TextStyle(
-                                  fontSize: 18.0,
-                                  color: Color(0xff96D5EB),
-                                )),
-                          ),
-                          ButtonBar(
-                            alignment: MainAxisAlignment.end,
-                            children: <Widget>[
-                              MaterialButton(
-                                child: Text(
-                                  'Edit',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                                onPressed: () {/* ... */},
-                                color: Color(0xff96D5EB),
+                    child: Column(
+                      children: [
+                        friendsList.isNotEmpty
+                            ? listOfWidgets(friendsList)
+                            : SizedBox(
+                                height: 10,
                               ),
-                              MaterialButton(
-                                color: Color(0xff96D5EB),
-                                child: Text(
-                                  'Remove',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                                onPressed: () {/* ... */},
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                   SizedBox(
-                    height: 60,
+                    height: 40,
                   ),
                   MaterialButton(
                     height: 40,
@@ -1139,18 +1413,25 @@ class _FriendsState extends State<Friends> {
                       ),
                     ),
                     onPressed: () {
+                      usersList.clear();
+                      getUsers();
                       showDialog(
                           context: context,
                           builder: (BuildContext context) {
                             return AlertDialog(
                               shape: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(10)),
                                   borderSide: BorderSide(
                                     width: 0,
                                     color: Colors.white,
                                   )),
                               scrollable: true,
-                              title: Text('Add Friend',style: TextStyle(fontSize: 30),textAlign: TextAlign.center,),
+                              title: Text(
+                                'Add Friend',
+                                style: TextStyle(fontSize: 30),
+                                textAlign: TextAlign.center,
+                              ),
                               content: Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Form(
@@ -1161,12 +1442,7 @@ class _FriendsState extends State<Friends> {
                                           labelText: 'Email',
                                           icon: Icon(Icons.person),
                                         ),
-                                      ),
-                                      TextFormField(
-                                        decoration: InputDecoration(
-                                          labelText: 'Password',
-                                          icon: Icon(Icons.lock ),
-                                        ),
+                                        controller: friends,
                                       ),
                                     ],
                                   ),
@@ -1180,7 +1456,29 @@ class _FriendsState extends State<Friends> {
                                       'Add',
                                       style: TextStyle(color: Colors.white),
                                     ),
-                                    onPressed: () {Navigator.pop(context);},
+                                    onPressed: () {
+                                      getFriends();
+                                      if (friends.text != "" &&
+                                          usersList.contains(friends.text) &&
+                                          friends.text != finalEmail) {
+                                        var userInfo = FirebaseFirestore
+                                            .instance
+                                            .collection('users')
+                                            .doc(currentUser.uid)
+                                            .update({
+                                          'Linked Accounts':
+                                              FieldValue.arrayUnion(
+                                                  [friends.text])
+                                        });
+                                      } else if (!usersList
+                                          .contains(friends.text)) {
+                                        showToast("No Such a user");
+                                      } else if (friends.text == finalEmail) {
+                                        showToast("This is current user");
+                                      }
+                                      Navigator.pop(context);
+                                      clearText();
+                                    },
                                   ),
                                 ),
                               ],
@@ -1195,6 +1493,75 @@ class _FriendsState extends State<Friends> {
         ),
       ),
     );
+  }
+
+  Widget listOfWidgets(List<String> item) {
+    List<Widget> list = [];
+    for (var i = 0; i < item.length; i++) {
+      list.add(Container(
+          child: Card(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.0),
+            side: BorderSide(
+              color: Color(0xff96D5EB),
+              width: 2,
+            )),
+        color: Colors.white,
+        child: Column(
+          children: <Widget>[
+            SizedBox(
+              height: 10,
+            ),
+            new ListTile(
+              leading: Icon(
+                Icons.person,
+                size: 50,
+                color: Color(0xff96D5EB),
+              ),
+              title: Text(item[i],
+                  style: TextStyle(
+                    fontSize: 22.0,
+                    color: Color(0xff96D5EB),
+                  )),
+              subtitle: Text("      h",
+                  style: TextStyle(
+                    fontSize: 18.0,
+                    color: Color(0xff96D5EB),
+                  )),
+            ),
+            ButtonBar(
+              alignment: MainAxisAlignment.center,
+              children: <Widget>[
+                MaterialButton(
+                  color: Colors.red,
+                  child: Text(
+                    'Remove',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(currentUser.uid)
+                          .update({
+                        'Linked Accounts':
+                            FieldValue.arrayRemove([friendsList[i]])
+                      });
+                      friendsList.remove(friendsList[i]);
+                      getFriends();
+                    });
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      )));
+    }
+    return Wrap(
+        spacing: 5.0, // gap between adjacent chips
+        runSpacing: 2.0, // gap between lines
+        children: list);
   }
 }
 
@@ -1257,8 +1624,9 @@ class _SettingsState extends State<Settings> {
                   child: MaterialButton(
                     height: 45,
                     onPressed: () {
-                      Navigator.push(
-                          context, MaterialPageRoute(builder: (context) => Profile()));
+                      profileInfo();
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => Profile()));
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1270,7 +1638,11 @@ class _SettingsState extends State<Settings> {
                             fontSize: 20,
                           ),
                         ),
-                         Icon(Icons.edit,size: 20,color: Colors.red,)
+                        Icon(
+                          Icons.edit,
+                          size: 20,
+                          color: Colors.red,
+                        )
                       ],
                     ),
                     shape: RoundedRectangleBorder(
@@ -1283,7 +1655,9 @@ class _SettingsState extends State<Settings> {
                   ),
                 ),
               ),
-              SizedBox(height: 20,),
+              SizedBox(
+                height: 20,
+              ),
               Row(
                 children: [
                   Icon(
@@ -1390,7 +1764,8 @@ class _SettingsState extends State<Settings> {
                     ),
                     MaterialButton(
                       onPressed: () {},
-                      child: Text("+ Add",
+                      child: Text(
+                        "+ Add",
                         style: TextStyle(color: Colors.red),
                       ),
                     )
@@ -1530,8 +1905,18 @@ class _SettingsState extends State<Settings> {
                 actions: [
                   Center(
                     child: MaterialButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
+                        onPressed: () async{
+                          try {
+                            FirebaseFirestore.instance.collection('users').doc(currentUser.uid).delete();
+                            FirebaseAuth.instance.currentUser.delete();
+                            FirebaseAuth.instance.signOut();
+                            Navigator.push(context,MaterialPageRoute(builder: (context) => FirstScreen()));
+                            final SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+                            sharedPreferences.remove("email");
+                          }catch (e) {
+                              print(e);
+                              print("e");
+                          }
                         },
                         color: Colors.red,
                         child: Text(
@@ -1565,6 +1950,7 @@ class _SettingsState extends State<Settings> {
       ),
     );
   }
+
 }
 
 class Profile extends StatefulWidget {
@@ -1573,7 +1959,142 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
+  File image;
+  Future uploadPP() async {
+    Reference storageReference = FirebaseStorage.instance
+        .ref()
+        .child('PP/${Path.basename(image.path)}}');
+    UploadTask uploadTask = storageReference.putFile(image);
+    print('File Uploaded');
+    print(image.toString());
+    TaskSnapshot taskSnapshot = await uploadTask;
+    String url = await taskSnapshot.ref.getDownloadURL();
+      print(url);
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .update({
+        'Profile Picture': url,
+      });
+      setState(() {
+        pp=url;
+      });
+  }
+
+  void displayBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+        context: context,
+        builder: (ctx) {
+          return Container(
+            height:155,
+            child: Column(mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  height: 50,
+                    child: Center(child: Text("Choose option"))),
+              SizedBox(
+                width: double.infinity,
+                child: MaterialButton(
+                  minWidth: 150,
+                  height: 50,
+                  onPressed: () async{
+                    PickedFile picked = await ImagePicker.platform.pickImage(source: ImageSource.camera);
+                    setState(() {
+                      image = File(picked.path);
+                    });
+                    uploadPP();
+                  },
+                  color: Color(0xff96D5EB),
+                  padding: EdgeInsets.symmetric(horizontal: 50),
+                  child: Text(
+                    "Take a Photo",
+                    style: TextStyle(
+                        fontSize: 14,  color: Colors.white),
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 5,
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: MaterialButton(
+                  minWidth: 150,
+                  height: 50,
+                  onPressed: () async{
+                    PickedFile picked = await ImagePicker.platform.pickImage(source: ImageSource.gallery);
+                    setState(() {
+                      image = File(picked.path);
+                    });
+                    uploadPP();
+                    },
+                  color: Color(0xff96D5EB),
+                  padding: EdgeInsets.symmetric(horizontal: 50),
+                  child: Text(
+                    "Upload from Gallery",
+                    style: TextStyle(
+                        fontSize: 14, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],),
+          );
+        });
+  }
   bool showPassword = false;
+  TextEditingController username= TextEditingController();
+  TextEditingController pass= TextEditingController();
+  TextEditingController phoneNum= TextEditingController();
+  TextEditingController blood= TextEditingController();
+  TextEditingController medical= TextEditingController();
+  TextEditingController dob= TextEditingController();
+  TextEditingController id = TextEditingController();
+  Future editProfile() async{
+    void fire (var field,var controller){
+      if(field == 'password' && controller != ""){
+        Hash hasher = sha512;
+        final Random _random = Random.secure();
+        String salting([int length = 2]) {
+          var values = List<int>.generate(
+              length, (i) => _random.nextInt(256));
+          return base64Url.encode(values);
+        }
+        String salt = salting().toString();
+        String hashedPass = salt + controller;
+        var bytes =
+        utf8.encode(hashedPass); // data being hashed
+        var digest = hasher.convert(bytes);
+        FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUser.uid)
+                .update({
+              'salt': salt,
+              'password': digest.toString(),
+            });
+        currentUser.updatePassword(controller).then((_){
+          showToast("Successfully changed password");
+        }).catchError((error){
+          showToast("Password can't be changed" + error.toString());
+        });
+      }
+
+      else if (controller != ""){FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .update({field: controller,
+    });}
+      if(field == 'password' && controller == ""){
+        showToast("Failed");
+      }
+    }
+    fire('Username',username.text);
+    fire('password',pass.text);
+    fire('Phone Number',phoneNum.text);
+    fire('Date of Birth',dob.text);
+    fire('National ID' ,id.text);
+    fire('Blood Type',blood.text);
+    fire('Medical Conditions',medical.text);
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1605,125 +2126,139 @@ class _ProfileState extends State<Profile> {
       drawer: NavBar(),
       body: Container(
         padding: EdgeInsets.only(left: 16, top: 25, right: 16),
-          child: ListView(
-            children: [
-              Center(
-                child: Text(
-                  "Edit Profile",
-                  style: TextStyle(
-                    fontFamily: "RubikItalic",
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+        child: ListView(
+          children: [
+            Center(
+              child: Text(
+                "Edit Profile",
+                style: TextStyle(
+                  fontFamily: "RubikItalic",
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
               ),
-              SizedBox(
-                height: 15,
-              ),
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 110,
-                      height: 110,
-                      decoration: BoxDecoration(
-                          border: Border.all(
-                              width: 4,
-                              color: Theme.of(context).scaffoldBackgroundColor),
-                          boxShadow: [
-                            BoxShadow(
-                                spreadRadius: 2,
-                                blurRadius: 10,
-                                color: Colors.black.withOpacity(0.1),
-                                offset: Offset(0, 10))
-                          ],
-                          shape: BoxShape.circle,
-                          image: DecorationImage(
-                              fit: BoxFit.cover,
-                              image: AssetImage("assets/images/user.jpg"),)),
-                    ),
-                    Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          height: 35,
-                          width: 35,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              width: 2,
-                              color: Theme.of(context).scaffoldBackgroundColor,
-                            ),
-                            color: Colors.grey,
-                          ),
-                          child: Icon(
-                            Icons.edit,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        )),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 25,
-              ),
-              buildTextField("Full Name", "example", false),
-              buildTextField("E-mail", "abc@gmail.com", false),
-              buildTextField("Password", "********", true),
-              buildTextField("Location", "Ismalia, Egypt", false),
-              SizedBox(
-                height: 15,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+            SizedBox(
+              height: 15,
+            ),
+            Center(
+              child: Stack(
                 children: [
-                  MaterialButton(
-                    height: 40,
-                    padding: EdgeInsets.symmetric(horizontal: 50),
-                    shape: RoundedRectangleBorder(
-                        side: BorderSide(
-                          color: Color(0xff96D5EB),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(20)),
-                    onPressed: () {Navigator.push(context,MaterialPageRoute(builder: (context) => Settings()));},
-                    child: Text("CANCEL",
-                        style: TextStyle(
-                            fontSize: 14,
-                            letterSpacing: 2.2,
-                            color: Colors.black)),
+                  Container(
+                    width: 110,
+                    height: 110,
+                    decoration: BoxDecoration(
+                        border: Border.all(
+                            width: 4,
+                            color: Theme.of(context).scaffoldBackgroundColor),
+                        boxShadow: [
+                          BoxShadow(
+                              spreadRadius: 2,
+                              blurRadius: 10,
+                              color: Colors.black.withOpacity(0.1),
+                              offset: Offset(0, 10))
+                        ],
+                        shape: BoxShape.circle,
+                        image: DecorationImage(
+                          fit: BoxFit.cover,
+                          image: (pp=="")?AssetImage("assets/images/user.jpg"):NetworkImage(pp),
+                        )),
                   ),
-                  MaterialButton(
-                    height: 40,
-                    onPressed: () {Navigator.push(context,MaterialPageRoute(builder: (context) => Settings()));},
-                    color: Color(0xff96D5EB),
-                    padding: EdgeInsets.symmetric(horizontal: 50),
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                    child: Text(
-                      "SAVE",
-                      style: TextStyle(
-                          fontSize: 14,
-                          letterSpacing: 2.2,
-                          color: Colors.white),
-                    ),
-                  )
+                  Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        height: 35,
+                        width: 35,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            width: 2,
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                          ),
+                          color: Colors.grey,
+                        ),
+                        child: IconButton(onPressed: () {
+                          displayBottomSheet(context);
+                         }, icon: Icon(Icons.edit,
+                          color: Colors.white,
+                          size: 20,))
+                      )),
                 ],
-              )
-            ],
-          ),
+              ),
+            ),
+            SizedBox(
+              height: 25,
+            ),
+            buildTextField(username,un,"Username", "###", false),
+            buildTextField(pass,"********","Change Password", "********", true),
+            buildTextField(phoneNum,pn,"Phone Number", "+010", false),
+            buildTextField(blood,bt,"Blood Type", "A+,A-,B+,B-,AB+,AB-,O+,O-", false),
+            buildTextField(medical,mc,"Medical Conditions", "...", false),
+            buildTextField(dob,db,"Date of Birth", "DD/MM/YYYY", false),
+            buildTextField(id,ni,"National ID", "***", false),
+            SizedBox(
+              height: 15,
+            ),
+          ],
         ),
+      ),
+      bottomNavigationBar: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          MaterialButton(
+            minWidth: 150,
+            height: 50,
+            padding: EdgeInsets.symmetric(horizontal: 50),
+            shape: RoundedRectangleBorder(
+                side: BorderSide(
+                  color: Color(0xff96D5EB),
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(20)),
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => Settings()));
+            },
+            child: Text("CANCEL",
+                style: TextStyle(
+                    fontSize: 14,
+                    letterSpacing: 2.2,
+                    color: Colors.black)),
+          ),
+          MaterialButton(
+            minWidth: 150,
+            height: 50,
+            onPressed: () {
+              editProfile();
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => Settings()));
+            },
+            color: Color(0xff96D5EB),
+            padding: EdgeInsets.symmetric(horizontal: 50),
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20)),
+            child: Text(
+              " SAVE ",
+              style: TextStyle(
+                  fontSize: 14, letterSpacing: 2.2, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget buildTextField(
+
+      TextEditingController control,var x,
       String labelText, String placeholder, bool isPasswordTextField) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 35.0),
       child: TextField(
+        controller: control,
         obscureText: isPasswordTextField ? showPassword : false,
         decoration: InputDecoration(
             suffixIcon: isPasswordTextField
@@ -1743,25 +2278,61 @@ class _ProfileState extends State<Profile> {
             labelText: labelText,
             labelStyle: TextStyle(
               fontSize: 25,
-              color: Colors.black,
+              color: Colors.blue,
             ),
             floatingLabelBehavior: FloatingLabelBehavior.always,
-            hintText: placeholder,
+            hintText: (x == "")? placeholder:x,
             hintStyle: TextStyle(
               fontSize: 18,
-              color: Colors.grey,
+              color: (x == "")?Colors.grey:Colors.black,
             )),
       ),
     );
   }
 }
 
-class Location extends StatefulWidget {
+class getLocation extends StatefulWidget {
   @override
-  _LocationState createState() => _LocationState();
+  _getLocationState createState() => _getLocationState();
 }
 
-class _LocationState extends State<Location> {
+class _getLocationState extends State<getLocation> {
+  /*Position _currentPosition;
+  String _currentAddress;
+  GoogleMapController mapController;
+  final LatLng _center = new LatLng( 37.421998333333335,-122.084);
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+  }*/
+  String _currentAddress;
+  GoogleMapController _controller;
+  Location currentLocation = Location();
+  Set<Marker> _markers={};
+  double x,y;
+
+
+  void getLocation() async{
+    var location = await currentLocation.getLocation();
+    currentLocation.onLocationChanged.listen((LocationData loc){
+
+      _controller?.animateCamera(CameraUpdate.newCameraPosition(new CameraPosition(
+        target: LatLng(loc.latitude ?? 0.0,loc.longitude?? 0.0),
+        zoom: 12.0,
+      )));
+      //print(loc.latitude);
+      //print(loc.longitude);
+      x=loc.latitude;
+      y=loc.longitude;
+      setState(() {
+        _getAddressFromLatLng();
+        _markers.add(Marker(markerId: MarkerId('Home'),
+            position: LatLng(loc.latitude ?? 0.0, loc.longitude ?? 0.0)
+        ));
+      });
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -1792,33 +2363,189 @@ class _LocationState extends State<Location> {
           ],
         ),
         drawer: NavBar(),
-        body: Container(
-          alignment: Alignment.center,
-          child: Column(
+        body:Container(
+          height: MediaQuery.of(context).size.height,
+          width: MediaQuery.of(context).size.width,
+          child:Column(
             children: [
-              SizedBox(
-                height: 20,
+              if (_currentAddress != null) Container(
+                padding: const EdgeInsets.all(10),
+                child: Text(
+                    _currentAddress,style: TextStyle(fontSize: 25,),textAlign: TextAlign.center,
+                ),
               ),
-              Text(
-                "Home Location",
-                style: TextStyle(
-                  fontFamily: "RubikItalic",
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+              Expanded(
+                child: GoogleMap(
+                  zoomControlsEnabled: false,
+                  initialCameraPosition:CameraPosition(
+                    target: LatLng(48.8561, 2.2930),
+                    zoom: 12.0,
+                  ),
+                  onMapCreated: (GoogleMapController controller){
+                    _controller = controller;
+                  },
+                  markers: _markers,
                 ),
               ),
               SizedBox(
-                height: 20,
+                width: double.infinity,
+                height: 50,
+                child: MaterialButton(
+                  color: Color(0xff96D5EB),
+                  child: Text("Save location",style:TextStyle(
+                    fontSize: 25,
+                    color: Colors.white,),),
+                    onPressed:(){
+                       FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(currentUser.uid)
+                          .update({
+                        'Home latitude': x,
+                        'Home longitude': y,
+                      });
+                  //MapUtils.openMap(x,y);
+                }
+                ),
               ),
-              Text("Ismalia,Egypt"),
+            ],
+          ) ,
+        ),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: Colors.red,
+          child: Icon(Icons.location_searching,color: Colors.white,),
+          onPressed: (){
+            getLocation();
+          },
+        ),
+      ),
+      /*Container(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: GoogleMap(
+                          onMapCreated: _onMapCreated,
+                          initialCameraPosition: CameraPosition(
+                            target: _center,
+                            zoom: 11.0,
+                          ),
+                        ),
+              ),
+              if (_currentAddress != null) Text(
+                  _currentAddress
+              ),
+              if (_currentPosition != null) Text(
+                  "LAT: ${_currentPosition.latitude}, LNG: ${_currentPosition.longitude}"
+              ),
+              MaterialButton(
+                child: Text("Get location"),
+                onPressed: () {
+
+                  _getCurrentLocation();
+                },
+              )
             ],
           ),
+        ),*/
+    );
+  }
+  /* _getCurrentLocation() async{
+    LocationPermission permission;
+    permission = await Geolocator.requestPermission();
+    Geolocator
+        .getCurrentPosition(desiredAccuracy: LocationAccuracy.best, forceAndroidLocationManager: true)
+        .then((Position position) {
+      setState(() {
+        _currentPosition = position;
+        _getAddressFromLatLng();
+      });
+    }).catchError((e) {
+      print(e);
+    });
+    print(_currentPosition);
+  }*/
+  _getAddressFromLatLng() async {
+    try {
+      List<geoc.Placemark> placemarks = await geoc.placemarkFromCoordinates(
+          x,
+         y
+      );
+
+      geoc.Placemark place = placemarks[0];
+
+      setState(() {
+        _currentAddress = "${place.locality}, ${place.postalCode}, ${place.country}";
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
+
+}
+
+class tracking extends StatefulWidget {
+  @override
+  _trackingState createState() => _trackingState();
+}
+
+class _trackingState extends State<tracking> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        backgroundColor: Color(0xff96D5EB),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 0),
+          child: Icon(
+            Icons.view_headline,
+            color: Colors.white,
+            size: 30,
+          ),
+        ),
+        title: Text(
+          'See',
+          style: TextStyle(
+            fontFamily: 'Lobster',
+            fontSize: 40,
+          ),
+        ),
+        actions: <Widget>[
+          Icon(
+            See.see,
+            size: 60,
+          ),
+        ],
+      ),
+      drawer: NavBar(),
+      body: Container(
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 20,
+            ),
+            Text(
+              "Tracking",
+              style: TextStyle(
+                fontFamily: "RubikItalic",
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            SizedBox(
+              height: 20,
+            ),
+            Text("qwerty"),
+          ],
         ),
       ),
     );
   }
 }
+
 
 class AboutDevice extends StatelessWidget {
   @override
@@ -1945,9 +2672,8 @@ class Barcode extends StatefulWidget {
 
 class _Barcode extends State<Barcode> {
   String _scanBarcode = 'Unknown';
-  List barcodes=["none"];
+  List barcodes = ["none"];
   final player = AudioCache();
-
 
   @override
   void initState() {
@@ -1958,13 +2684,13 @@ class _Barcode extends State<Barcode> {
     barcodes.clear();
     FlutterBarcodeScanner.getBarcodeStreamReceiver(
             '#ff6666', 'Cancel', true, ScanMode.BARCODE)
-        .listen((barcode) { print(barcode);
-    player.play('audios/audio.wav');
-    barcodes.add(barcode);
-    _scanBarcode=barcode;
-   });
+        .listen((barcode) {
+      print(barcode);
+      player.play('audios/audio.wav');
+      barcodes.add(barcode);
+      _scanBarcode = barcode;
+    });
   }
-
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> scanBarcodeNormal() async {
@@ -1985,14 +2711,14 @@ class _Barcode extends State<Barcode> {
     // setState to update our non-existent appearance.
     if (!mounted) return;
     setState(() {
-      _scanBarcode= barcodeScanRes;
+      _scanBarcode = barcodeScanRes;
     });
     launchURL(barcodeScanRes);
   }
+
   void launchURL(url) async {
     await canLaunch(url) ? await launch(url) : throw 'Could not launch $url';
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -2072,10 +2798,11 @@ class _Barcode extends State<Barcode> {
                           height: 15,
                         ),
                         MaterialButton(
-                          height: 50,
+                            height: 50,
                             minWidth: 150,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(12)),
                             ),
                             color: Colors.red,
                             child: Text(
@@ -2086,38 +2813,60 @@ class _Barcode extends State<Barcode> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                          onPressed: () { showDialog<String>(
-                            context: context,
-                            builder: (BuildContext context) => AlertDialog(
-                              title:  Text('Scan Stream Results'),
-                              content: InkWell(child: Text('$barcodes\n',style: TextStyle(fontSize: 20,color: Colors.red,decoration: TextDecoration.underline,),),
-                                  onTap:() {launchURL(barcodes);}),
-                              actions: <Widget>[
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, 'OK'),
-                                  child: const Text('OK'),
+                            onPressed: () {
+                              showDialog<String>(
+                                context: context,
+                                builder: (BuildContext context) => AlertDialog(
+                                  title: Text('Scan Stream Results'),
+                                  content: InkWell(
+                                      child: Text(
+                                        '$barcodes\n',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          color: Colors.red,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                      onTap: () {
+                                        launchURL(barcodes);
+                                      }),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, 'OK'),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );}
-                        ),
+                              );
+                            }),
                         SizedBox(
                           height: 30,
                         ),
-                        Text('Scan result:',
-                          style: TextStyle(fontSize: 25),textAlign: TextAlign.left,),
+                        Text(
+                          'Scan result:',
+                          style: TextStyle(fontSize: 25),
+                          textAlign: TextAlign.left,
+                        ),
                         SizedBox(
                           height: 10,
                         ),
-                        InkWell(child: Text('$_scanBarcode\n',style: TextStyle(fontSize: 30,color: Colors.red,decoration: TextDecoration.underline,),),
-                        onTap:() {launchURL(_scanBarcode);}),
-
-
+                        InkWell(
+                            child: Text(
+                              '$_scanBarcode\n',
+                              style: TextStyle(
+                                fontSize: 30,
+                                color: Colors.red,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                            onTap: () {
+                              launchURL(_scanBarcode);
+                            }),
                       ]));
             })));
   }
 }
-
 
 /*audioplayers: ^0.20.1
   import 'package:audioplayers/audioplayers.dart';

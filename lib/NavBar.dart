@@ -18,17 +18,17 @@ class NavBar extends StatelessWidget {
               margin: EdgeInsets.only(left: 2,),
               decoration: BoxDecoration(
             ),
-              accountName: Text('Username',style: TextStyle(fontSize: 20,color: Colors.black,fontStyle: FontStyle.italic,
+              accountName: Text(main.un,style: TextStyle(fontSize: 20,color: Colors.black,fontStyle: FontStyle.italic,
               fontWeight: FontWeight.w700,),),
-              accountEmail: Text('email@abc.com',style: TextStyle(fontSize: 18,color: Colors.grey,),),
+              accountEmail: Text(main.finalEmail,style: TextStyle(fontSize: 18,color: Colors.grey,),),
               currentAccountPicture: CircleAvatar(
-                  backgroundImage: AssetImage("assets/images/user.jpg" ),
+                  backgroundImage: (main.pp=="")?AssetImage("assets/images/user.jpg"):NetworkImage(main.pp),
               ),
             ),
             ListTile(
               leading: Icon(Icons.home,size: 25,color: Colors.black,),
-              title: Text('HomeScreen',style: TextStyle(fontSize: 18,color: Colors.black),),
-              onTap: () {Navigator.push(context,MaterialPageRoute(builder: (context) => main.Home()));},
+              title: Text('Home Screen',style: TextStyle(fontSize: 18,color: Colors.black),),
+              onTap: () {Navigator.push(context,MaterialPageRoute(builder: (context) => (main.accountType == "Blind")? main.Home(): main.HomeF()));},
             ),
             ListTile(
               leading: Icon(Icons.person,size: 25,color: Colors.black,),
@@ -37,8 +37,8 @@ class NavBar extends StatelessWidget {
             ),
             ListTile(
               leading: Icon(Icons.location_on,size: 25,color: Colors.black,),
-              title: Text('Home Location',style: TextStyle(fontSize: 18,color: Colors.black),),
-              onTap: () {Navigator.push(context,MaterialPageRoute(builder: (context) => main.Location()));},
+              title: Text((main.accountType == "Blind")? 'Home Location':'Tracking',style: TextStyle(fontSize: 18,color: Colors.black),),
+              onTap: () {Navigator.push(context,MaterialPageRoute(builder: (context) => (main.accountType == "Blind")?main.getLocation(): main.tracking()));},
             ),
             Divider(thickness: 1,indent: 15,endIndent: 15,),
             ListTile(
