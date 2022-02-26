@@ -11,6 +11,7 @@ class NavBar extends StatelessWidget {
     return Container(
       width: 250,
       child: Drawer(
+        backgroundColor: main.theme?Colors.white:Colors.black,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -19,7 +20,7 @@ class NavBar extends StatelessWidget {
               decoration: BoxDecoration(
 
             ),
-              accountName: Text(main.un,style: TextStyle(fontSize: 20,fontFamily: "RedHatBold",color: Colors.black,fontStyle: FontStyle.italic,
+              accountName: Text(main.un,style: TextStyle(fontSize: 20,fontFamily: "RedHatBold",color: main.theme?Colors.black:Colors.white,fontStyle: FontStyle.italic,
               fontWeight: FontWeight.w700,),),
               accountEmail: Text(main.finalEmail,style: TextStyle(fontSize: 18,color: Colors.grey,fontFamily: "RedHatRegular"),),
               currentAccountPicture: CircleAvatar(
@@ -27,8 +28,8 @@ class NavBar extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.home,size: 25,color: Colors.black,),
-              title: Text('Home Screen',style: TextStyle(fontSize: 18,color: Colors.black,fontFamily: "RedHatMedium"),),
+              leading: Icon(Icons.home,size: 25,color: main.theme?Colors.black:Colors.white,),
+              title: Text('Home Screen',style: TextStyle(fontSize: 18,color: main.theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"),),
               onLongPress: ()async{
                 if(main.accountType=='Blind'){
                   await main.tts.setSpeechRate(0.5);
@@ -38,8 +39,8 @@ class NavBar extends StatelessWidget {
               onTap: () {Navigator.push(context,MaterialPageRoute(builder: (context) => (main.accountType == "Blind")? main.Home(): main.HomeF()));},
             ),
             ListTile(
-              leading: Icon(Icons.people,size: 25,color: Colors.black,),
-              title: Text('Friends',style: TextStyle(fontSize: 18,color: Colors.black,fontFamily: "RedHatMedium"),),
+              leading: Icon(Icons.people,size: 25,color: main.theme?Colors.black:Colors.white,),
+              title: Text('Friends',style: TextStyle(fontSize: 18,color: main.theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"),),
               onLongPress: ()async{
                 if(main.accountType=='Blind'){
                   await main.tts.setSpeechRate(0.5);
@@ -49,8 +50,8 @@ class NavBar extends StatelessWidget {
               onTap: () {Navigator.push(context,MaterialPageRoute(builder: (context) => main.Friends()));},
             ),
             ListTile(
-              leading: Icon(Icons.person,size: 25,color: Colors.black,),
-              title: Text('Personal Info',style: TextStyle(fontSize: 18,color: Colors.black,fontFamily: "RedHatMedium"),),
+              leading: Icon(Icons.person,size: 25,color: main.theme?Colors.black:Colors.white,),
+              title: Text('Personal Info',style: TextStyle(fontSize: 18,color:main.theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"),),
               onLongPress: ()async{
                 if(main.accountType=='Blind'){
                   await main.tts.setSpeechRate(0.5);
@@ -60,8 +61,8 @@ class NavBar extends StatelessWidget {
               onTap: () {Navigator.push(context,MaterialPageRoute(builder: (context) => main.userInfo()));},
             ),
             ListTile(
-              leading: Icon(Icons.location_on,size: 25,color: Colors.black,),
-              title: Text((main.accountType == "Blind")? 'Home Location':'Tracking',style: TextStyle(fontSize: 18,color: Colors.black,fontFamily: "RedHatMedium"),),
+              leading: Icon(Icons.location_on,size: 25,color: main.theme?Colors.black:Colors.white,),
+              title: Text((main.accountType == "Blind")? 'Home Location':'Tracking',style: TextStyle(fontSize: 18,color: main.theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"),),
               onLongPress: ()async{
                 if(main.accountType=='Blind'){
                   await main.tts.setSpeechRate(0.5);
@@ -72,8 +73,8 @@ class NavBar extends StatelessWidget {
             ),
             Divider(thickness: 1,indent: 15,endIndent: 15,),
             ListTile(
-              leading: Icon(MyFlutterApp.glasses,size: 28,color: Colors.black,),
-              title: Text('About Device',style: TextStyle(fontSize: 18,color: Colors.black,fontFamily: "RedHatMedium"),),
+              leading: Icon(MyFlutterApp.glasses,size: 28,color: main.theme?Colors.black:Colors.white,),
+              title: Text('About Device',style: TextStyle(fontSize: 18,color: main.theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"),),
               onLongPress: ()async{
                 if(main.accountType=='Blind'){
                   await main.tts.setSpeechRate(0.5);
@@ -85,8 +86,8 @@ class NavBar extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: Icon(See.see,size: 31,color: Colors.black,),
-              title: Text('About Us',style: TextStyle(fontSize: 18,color: Colors.black,fontFamily: "RedHatMedium"),),
+              leading: Icon(See.see,size: 31,color: main.theme?Colors.black:Colors.white,),
+              title: Text('About Us',style: TextStyle(fontSize: 18,color: main.theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"),),
               onLongPress: ()async{
                 if(main.accountType=='Blind'){
                   await main.tts.setSpeechRate(0.5);
@@ -99,8 +100,8 @@ class NavBar extends StatelessWidget {
             ),
             Divider(thickness: 1,indent: 15,endIndent: 15,),
             ListTile(
-              title: Text('Settings',style: TextStyle(fontSize: 18,color: Colors.black,fontFamily: "RedHatMedium"),),
-              leading: Icon(Icons.settings,size: 25,color: Colors.black,),
+              title: Text('Settings',style: TextStyle(fontSize: 18,color: main.theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"),),
+              leading: Icon(Icons.settings,size: 25,color: main.theme?Colors.black:Colors.white,),
               onLongPress: ()async{
                 if(main.accountType=='Blind'){
                   await main.tts.setSpeechRate(0.5);
@@ -112,8 +113,8 @@ class NavBar extends StatelessWidget {
               },
             ),
             ListTile(
-              title: Text('Log Out',style: TextStyle(fontSize: 18,color: Colors.black,fontFamily: "RedHatMedium"),),
-              leading: Icon(Icons.exit_to_app,size: 25,color: Colors.black,),
+              title: Text('Log Out',style: TextStyle(fontSize: 18,color: main.theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"),),
+              leading: Icon(Icons.exit_to_app,size: 25,color: main.theme?Colors.black:Colors.white,),
               onLongPress: ()async{
                 if(main.accountType=='Blind'){
                   await main.tts.setSpeechRate(0.5);

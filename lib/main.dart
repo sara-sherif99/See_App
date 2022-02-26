@@ -42,6 +42,25 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get/get.dart';
+
+var theme;
+Future themeData() async {
+  var info = FirebaseFirestore.instance;
+  await for (var snapshot
+  in info.collection('users').doc(currentUser.uid).snapshots()) {
+    dc = snapshot.get('Default Contact');
+    theme = snapshot.get('Theme');
+    if(theme=="true"){
+      theme=true;
+    }
+    else if(theme=="false"){
+      theme=false;
+    }
+
+  }
+
+}
 
 class MapUtils {
 
@@ -261,21 +280,19 @@ Future goHome() async {
 
 }
 
-var un, cp, pn, bt, mc, db, ni,pp,accountType;
+var un, pn, bt, mc, db, ni,pp,accountType,dc;
 Future profileInfo() async {
   var info = FirebaseFirestore.instance;
   await for (var snapshot
   in info.collection('users').doc(currentUser.uid).snapshots()) {
     un = snapshot.get('Username');
-    cp = snapshot.get('password');
     pn = snapshot.get('Phone Number');
     bt = snapshot.get('Blood Type');
     mc = snapshot.get('Medical Conditions');
     db = snapshot.get('Date of Birth');
     ni = snapshot.get('National ID');
+
   }
-  print("cp");
-  print(cp);
 }
 
 void showToast(msg) async{
@@ -283,8 +300,8 @@ void showToast(msg) async{
     msg: msg,
     fontSize: 18,
     gravity: ToastGravity.BOTTOM,
-    backgroundColor: Colors.red,
-    textColor: Colors.white,
+    backgroundColor: Colors.grey,
+    textColor: Colors.black,
   );
     if(accountType!='Friend'){
       await tts.setSpeechRate(0.5);
@@ -351,6 +368,8 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
+  static final ValueNotifier<ThemeMode> themeNotifier =
+  ValueNotifier(ThemeMode.light);
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -361,13 +380,11 @@ class MyApp extends StatelessWidget {
         )
       ],
       child: MaterialApp(
-        title: 'Email And Password Login',
-        theme: ThemeData(
-          primarySwatch: Colors.red,
-        ),
-        debugShowCheckedModeBanner: false,
-        home: Splash(),
-      ),
+              title: 'Email And Password Login',
+              theme: ThemeData(primarySwatch: Colors.amber),
+              debugShowCheckedModeBanner: false,
+              home: Splash(),
+            ),
     );
   }
 }
@@ -404,6 +421,7 @@ class _SplashState extends State<Splash> {
     });
     friendsList=[];
     requestsList=[];
+    themeData();
     //getFriends();
     contactsList=[];
     sortedUsers=[];
@@ -1215,6 +1233,8 @@ class _SignUp extends State<Sign> {
                               'Blood Type':"",
                               'Medical Conditions':"",
                               'Profile Picture':"",
+                              'Theme':"true",
+                              'Default Contact':"",
                             });
                             Navigator.pushReplacement(
                               context,
@@ -1254,11 +1274,11 @@ class _HomeFState extends State<HomeF> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:  theme?Colors.white:Colors.black,
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor:  theme?Colors.white:Colors.black,
         leading: Padding(
           padding: const EdgeInsets.only(left: 0),
           child: Icon(
@@ -1292,7 +1312,7 @@ class _HomeFState extends State<HomeF> {
             MaterialButton(
               height: 150,
               minWidth: 300,
-              color: Colors.white,
+              color:  theme?Colors.white:Colors.black,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                   side: BorderSide(
@@ -1339,6 +1359,17 @@ class _HomeScreen extends State<Home> {
   bool b4 = false;
   bool b5 = false;
   bool b6 = false;
+  _launchCaller() async {
+    String phoneNumber = dc;
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    await launch(launchUri.toString());
+    //var url = "tel:"+dc;
+    //const url = 'tel:9876543210';
+    //await canLaunch(url) ? await launch(url) : throw 'Could not launch $url';
+  }
   @override
   void initState(){
     super.initState();
@@ -1348,11 +1379,11 @@ class _HomeScreen extends State<Home> {
     return MaterialApp(
       title: 'Welcome to Flutter',
       home: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: theme?Colors.white:Colors.black,
         appBar: AppBar(
           elevation: 0,
           centerTitle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: theme?Colors.white:Colors.black,
           leading: Padding(
             padding: const EdgeInsets.only(left: 0),
             child: Icon(
@@ -1387,7 +1418,7 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b1 ? Colors.white : Colors.white,
+                    color: theme?Colors.white:Colors.black,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
@@ -1427,7 +1458,7 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b2 ? Colors.white : Colors.white,
+                    color: theme?Colors.white:Colors.black,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
@@ -1465,7 +1496,7 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b3 ? Colors.white : Colors.white,
+                    color: theme?Colors.white:Colors.black,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
@@ -1508,7 +1539,7 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b4 ? Colors.white : Colors.white,
+                    color: theme?Colors.white:Colors.black,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
@@ -1546,7 +1577,7 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b5 ? Colors.white : Colors.white,
+                    color: theme?Colors.white:Colors.black,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
@@ -1590,7 +1621,7 @@ class _HomeScreen extends State<Home> {
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
-                    color: b6 ? Colors.white : Colors.white,
+                    color: theme?Colors.white:Colors.black,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
@@ -1619,10 +1650,20 @@ class _HomeScreen extends State<Home> {
                       await tts.setSpeechRate(0.5);
                       await tts.speak("call");
                     },
-                    onPressed: () {
+                    onPressed: () async{
                       setState(() {
                         b6 = !b6;
                       });
+                      Timer(
+                        Duration(seconds: 2),
+                            () => setState(() {
+                          b6 = !b6;
+                        }),);
+                      if(dc!=""){_launchCaller();}
+                      else{showToast("No default contact");
+                      }
+                      print(dc);
+
                     },
                   ),
                 ],
@@ -1646,11 +1687,13 @@ class _HomeScreen extends State<Home> {
                 style: TextStyle(
                   fontSize: 20,
                   fontFamily: "RedHatBold",
+                  color: Colors.white,
                 ),
               ),
               icon: Icon(
                 Icons.settings_overscan,
                 size: 30,
+                color: Colors.white,
               ),
               backgroundColor: new Color(0xff96D5EB),
               onPressed: () {
@@ -1741,11 +1784,11 @@ class _FriendsState extends State<Friends> {
       final ref = fb.ref();
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: theme?Colors.white:Colors.black,
         appBar: AppBar(
           elevation: 0,
           centerTitle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: theme?Colors.white:Colors.black,
           leading: Padding(
             padding: const EdgeInsets.only(left: 0),
             child: Icon(
@@ -1789,7 +1832,7 @@ class _FriendsState extends State<Friends> {
                           fontFamily: "RedHatRegular",
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: theme?Colors.black:Colors.white,
                         ),
                       ),
                       Container(
@@ -1852,6 +1895,7 @@ class _FriendsState extends State<Friends> {
                       itemCount: requestsList.length,
                       itemBuilder: (connectionContext, index) {
                         return Container(
+                          color: theme?Colors.white:Colors.black,
                           padding: EdgeInsets.all(30),
                           height: 100.0,
                           width: double.maxFinite,
@@ -1940,7 +1984,9 @@ class _FriendsState extends State<Friends> {
           ),
         ),
         bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: theme?Colors.white:Colors.black,
           selectedItemColor: Color(0xff96D5EB),
+          unselectedItemColor: Colors.grey,
           items: [
             BottomNavigationBarItem(icon: Icon(Icons.people),label: " ",),
             BottomNavigationBarItem(label:"",icon: Stack(
@@ -1979,7 +2025,7 @@ class _FriendsState extends State<Friends> {
               color: Color(0xff96D5EB),
               width: 2,
             )),
-            color: Colors.white,
+            color: theme?Colors.white:Colors.black,
           child: Column(
             children: <Widget>[
             SizedBox(
@@ -2108,11 +2154,11 @@ class _AddState extends State<Add> {
     final ref = fb.ref();
     return MaterialApp(
         home: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: theme?Colors.white:Colors.black,
           appBar: AppBar(
             elevation: 0,
             centerTitle: true,
-            backgroundColor: Colors.white,
+            backgroundColor: theme?Colors.white:Colors.black,
             title: const Text(
               'Add Friend',
               style: TextStyle(
@@ -2146,10 +2192,34 @@ class _AddState extends State<Add> {
                                 await tts.setSpeechRate(0.5);
                                 await tts.speak("friend email");
                               }
-                            },
+                            },style: TextStyle(color: theme?Colors.black:Colors.white),
                             decoration: InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                  vertical: 5.0, horizontal: 5.0),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(10)),
+                                borderSide: BorderSide(
+                                  color: Colors.grey,
+                                  width: 2,
+                                ),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(10)),
+                                borderSide: BorderSide(
+                                  color: Colors.red,
+                                  width: 2,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(10)),
+                                borderSide: BorderSide(
+                                  color: Color(0xff96D5EB),
+                                  width: 2,
+                                ),
+                              ),
                               labelText: 'Email',
-                              icon: Icon(Icons.person,color: Color(0xff96D5EB),),
+                              labelStyle: TextStyle(color: Colors.grey),
+                              prefixIcon: Icon(Icons.person,color: Color(0xff96D5EB),),
                             ),
                             controller: friends,
                             onChanged: (writeText) {
@@ -2193,7 +2263,7 @@ class _AddState extends State<Add> {
                                       Text(
                                         sortedUsers[index]
                                             .toString(),
-                                        style: TextStyle(color: Colors.black, fontSize: 20.0,fontFamily: "RedHatRegular"),
+                                        style: TextStyle(color:  theme?Colors.black:Colors.white, fontSize: 20.0,fontFamily: "RedHatRegular"),
                                       ),
                                       TextButton(
                                           style: TextButton.styleFrom(
@@ -2281,6 +2351,40 @@ class Settings extends StatefulWidget {
 class _SettingsState extends State<Settings> {
   TextEditingController number = TextEditingController();
 
+  bool isSwitched = !theme;
+  void toggleSwitch(bool value) {
+
+    if(isSwitched == false)
+    {
+      setState(() {
+        isSwitched = true;
+        theme = !theme;
+        var userInfo = FirebaseFirestore
+            .instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .update({
+          'Theme': theme.toString(),
+        });
+      });
+    }
+    else
+    {
+      setState(() {
+        isSwitched = false;
+        theme = !theme;
+        var userInfo = FirebaseFirestore
+            .instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .update({
+          'Theme': theme.toString(),
+        });
+
+      });
+    }
+  }
+
   void clearText() {
     number.clear();
   }
@@ -2288,11 +2392,11 @@ class _SettingsState extends State<Settings> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: theme?Colors.white:Colors.black,
         appBar: AppBar(
           elevation: 0,
           centerTitle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: theme?Colors.white:Colors.black,
           leading: Padding(
             padding: const EdgeInsets.only(left: 0),
             child: Icon(
@@ -2329,7 +2433,7 @@ class _SettingsState extends State<Settings> {
                       fontFamily: "RedHatRegular",
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black),
+                      color: theme?Colors.black:Colors.white),
                 ),
               ),
               SizedBox(
@@ -2384,14 +2488,15 @@ class _SettingsState extends State<Settings> {
                 children: [
                   Icon(
                     Icons.person,
-                    color: Colors.black,
+                    color: theme?Colors.black:Colors.white,
                   ),
                   SizedBox(
                     width: 8,
                   ),
                   Text(
                     "Account",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,fontFamily: "RedHatMedium",),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,fontFamily: "RedHatMedium",
+                    color: theme?Colors.black:Colors.white,),
                   ),
                 ],
               ),
@@ -2411,14 +2516,15 @@ class _SettingsState extends State<Settings> {
                 children: [
                   Icon(
                     Icons.security,
-                    color: Colors.black,
+                    color: theme?Colors.black:Colors.white,
                   ),
                   SizedBox(
                     width: 8,
                   ),
                   Text(
                     "General",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,fontFamily: "RedHatMedium",),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,fontFamily: "RedHatMedium",
+                    color: theme?Colors.black:Colors.white,),
                   ),
                 ],
               ),
@@ -2426,6 +2532,27 @@ class _SettingsState extends State<Settings> {
                 height: 15,
                 thickness: 2,
               ),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Dark Mode",
+                  style: TextStyle(color: Colors.grey,
+                      fontFamily: "RedHatMedium",fontSize: 18),),
+                  Transform.scale(
+                      scale: 1.5,
+                      child: Switch(
+                        onChanged: toggleSwitch,
+                        value: isSwitched,
+                        activeColor: Color(0xff96D5EB),
+                        activeTrackColor: Color(0xff96D5EB),
+                        inactiveThumbColor: Colors.grey,
+                        inactiveTrackColor: Colors.grey,
+                      )
+                  ),
+                ],
+              ),
+
 
             ],
           ),
@@ -2636,14 +2763,41 @@ class _SettingsState extends State<Settings> {
                                   FieldValue.arrayRemove([item[i]])
                                 });
                                 contactsList.remove(contactsList[i]);
+                                if(item[i]==dc){
+                                  dc="";
+                                  var userInfo = FirebaseFirestore
+                                      .instance
+                                      .collection('users')
+                                      .doc(currentUser.uid)
+                                      .update({
+                                    'Default Contact': "",
+                                  });
+                                }
                               });
                         },
                           ),
                         ],
                       ),
-                MaterialButton(onPressed: (){},
-                  child: Text("Set as default",style: TextStyle(color: Color(0xff96D5EB),fontFamily: "RedHatBold",),),
+                if (item[i]!=dc)MaterialButton(
+                  onLongPress: ()async{if(accountType=='Blind'){
+                    await tts.setSpeechRate(0.2);
+                    await tts.speak("set"+item[i]+"as default contact");
+                  }},
+                  onPressed: (){
+                  dc=item[i].toString();
+                    var userInfo = FirebaseFirestore
+                        .instance
+                        .collection('users')
+                        .doc(currentUser.uid)
+                        .update({
+                      'Default Contact': item[i].toString(),
+                    });
+                  Navigator.push(context,MaterialPageRoute(builder: (context) => Settings()));
+                  },
+                  child: Text("Set as default",
+                    style: TextStyle(color: Color(0xff96D5EB),fontFamily: "RedHatBold",),),
                 ),
+                if (item[i] == dc)Text("Default",style: TextStyle(color: Colors.black,fontFamily: "RedHatBold",),),
                 Divider(
                   height: 15,
                   thickness: 2,
@@ -2974,35 +3128,7 @@ class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 0),
-          child: Icon(
-            Icons.view_headline,
-            color: Color(0xff96D5EB),
-            size: 30,
-          ),
-        ),
-        title: Text(
-          'See',
-          style: TextStyle(
-            fontFamily: 'Lobster',
-            color: Color(0xff96D5EB),
-            fontSize: 40,
-          ),
-        ),
-        actions: <Widget>[
-          Icon(
-            See.see,
-            size: 60,
-            color: Color(0xff96D5EB),
-          ),
-        ],
-      ),
+      backgroundColor: theme?Colors.white:Colors.black,
       drawer: NavBar(),
       body: Container(
         padding: EdgeInsets.only(left: 16, top: 25, right: 16),
@@ -3015,7 +3141,7 @@ class _ProfileState extends State<Profile> {
                   fontFamily: "RedHatRegular",
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: theme?Colors.black:Colors.white,
                 ),
               ),
             ),
@@ -3114,7 +3240,7 @@ class _ProfileState extends State<Profile> {
                   fontFamily: "RedHatMedium",
                     fontSize: 14,
                     letterSpacing: 2.2,
-                    color: Colors.black)),
+                    color: Color(0xff96D5EB),)),
           ),
           MaterialButton(
             minWidth: 150,
@@ -3159,6 +3285,7 @@ class _ProfileState extends State<Profile> {
         controller: control,
         obscureText: isPasswordTextField ? showPassword : false,
         decoration: InputDecoration(
+          fillColor: theme?Colors.black:Colors.white,
             suffixIcon: isPasswordTextField
                 ? IconButton(
                     onPressed: () {
@@ -3183,7 +3310,7 @@ class _ProfileState extends State<Profile> {
             hintText: (x == "")? placeholder:x,
             hintStyle: TextStyle(
               fontSize: 18,
-              color: (x == "")?Colors.grey:Colors.black,
+              color: (x == "")?Colors.grey:theme?Colors.black:Colors.white,
             )),
       ),
     );
@@ -3234,11 +3361,11 @@ class _getLocationState extends State<getLocation> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: theme?Colors.white:Colors.black,
         appBar: AppBar(
           elevation: 0,
           centerTitle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: theme?Colors.white:Colors.black,
           leading: Padding(
             padding: const EdgeInsets.only(left: 0),
             child: Icon(
@@ -3272,7 +3399,8 @@ class _getLocationState extends State<getLocation> {
               if (_currentAddress != null) Container(
                 padding: const EdgeInsets.all(10),
                 child: Text(
-                    _currentAddress,style: TextStyle(fontSize: 25,fontFamily: "RedHatRegular"),textAlign: TextAlign.center,
+                    _currentAddress,style: TextStyle(fontSize: 25,fontFamily: "RedHatRegular",
+                color: theme?Colors.black:Colors.white,),textAlign: TextAlign.center,
                 ),
               ),
               Expanded(
@@ -3314,11 +3442,11 @@ class _getLocationState extends State<getLocation> {
                 }
                 ),
               ),
-            ],
+            ]
           ) ,
         ),
         floatingActionButton: FloatingActionButton(
-          backgroundColor: Colors.white,
+          backgroundColor: theme?Colors.white:Colors.black,
           child: Icon(Icons.location_searching,color: Color(0xff96D5EB),),
           onPressed: ()async{if(accountType=='Blind'){
               await tts.setSpeechRate(0.2);
@@ -3404,11 +3532,11 @@ class _userInfoState extends State<userInfo> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:  theme?Colors.white:Colors.black,
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor:  theme?Colors.white:Colors.black,
         leading: Padding(
           padding: const EdgeInsets.only(left: 0),
           child: Icon(
@@ -3450,7 +3578,7 @@ class _userInfoState extends State<userInfo> {
                   fontFamily: "RedHatRegular",
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: theme?Colors.black:Colors.white,
                 ),
               ),
               SizedBox(height: 40,),
@@ -3491,55 +3619,55 @@ class _userInfoState extends State<userInfo> {
                 await tts.setSpeechRate(0.2);
                 await tts.speak("username" + un);
                }}, child: Text("Username: $un",style: TextStyle(
-                fontSize: 25,color: Colors.black,fontFamily: "RedHatMedium",
+                fontSize: 25,color: theme?Colors.black:Colors.white,fontFamily: "RedHatMedium",
               ),),),
               TextButton(onPressed: ()async{if(accountType=='Blind'){
                 await tts.setSpeechRate(0.2);
                 await tts.speak("E mail" + finalEmail);
               }}, child: Text("Email: $finalEmail",style: TextStyle(
-                  fontSize: 25,color: Colors.black,fontFamily: "RedHatMedium"
+                  fontSize: 25,color: theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"
               ),),),
               TextButton(onPressed: ()async{if(accountType=='Blind'){
                 await tts.setSpeechRate(0.2);
                 await tts.speak("account type" + accountType);
               }}, child: Text("Account type: $accountType",style: TextStyle(
-                  fontSize: 25,color: Colors.black,fontFamily: "RedHatMedium"
+                  fontSize: 25,color: theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"
               ),),),
               TextButton(onPressed: ()async{if(accountType=='Blind'){
                 await tts.setSpeechRate(0.2);
                 await tts.speak("Phone Number" + pn);
               }}, child: Text("Phone Number: $pn",style: TextStyle(
-                  fontSize: 25,color: Colors.black,fontFamily: "RedHatMedium"
+                  fontSize: 25,color: theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"
               ),),),
               TextButton(onPressed: ()async{if(accountType=='Blind'){
                 await tts.setSpeechRate(0.2);
                 await tts.speak("Date of birth" + db);
               }}, child: Text("Date of Birth: $db",style: TextStyle(
-                  fontSize: 25,color: Colors.black,fontFamily: "RedHatMedium"
+                  fontSize: 25,color: theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"
               ),),),
               TextButton(onPressed: ()async{if(accountType=='Blind'){
                 await tts.setSpeechRate(0.2);
                 await tts.speak("National ID" + ni);
               }}, child: Text("National ID: $ni",style: TextStyle(
-                  fontSize: 25,color: Colors.black,fontFamily: "RedHatMedium"
+                  fontSize: 25,color: theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"
               ),),),
               TextButton(onPressed: ()async{if(accountType=='Blind'){
                 await tts.setSpeechRate(0.2);
                 await tts.speak("Blood type" + bt);
               }}, child: Text("Blood Type: $bt",style: TextStyle(
-                  fontSize: 25,color: Colors.black,fontFamily: "RedHatMedium"
+                  fontSize: 25,color: theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"
               ),),),
               TextButton(onPressed: ()async{if(accountType=='Blind'){
                 await tts.setSpeechRate(0.2);
                 await tts.speak("Medical conditions" + mc);
               }}, child: Text("Medical Conditions: $mc",style: TextStyle(
-                  fontSize: 25,color: Colors.black,fontFamily: "RedHatMedium"
+                  fontSize: 25,color: theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"
               ),),),
               ( accountType == "Blind")?TextButton(onPressed: ()async{if(accountType=='Blind'){
                 await tts.setSpeechRate(0.2);
                 await tts.speak("Home Address" + address);
               }}, child: Text("Home Address: $address",style: TextStyle(
-                  fontSize: 25,color: Colors.black,fontFamily: "RedHatMedium"
+                  fontSize: 25,color: theme?Colors.black:Colors.white,fontFamily: "RedHatMedium"
               ),),):SizedBox(height: 10,),
             ],
           ),
@@ -3633,11 +3761,11 @@ class _trackingState extends State<tracking> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme?Colors.white:Colors.black,
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: theme?Colors.white:Colors.black,
         leading: Padding(
           padding: const EdgeInsets.only(left: 0),
           child: Icon(
@@ -3688,11 +3816,11 @@ class AboutDevice extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: theme?Colors.white:Colors.black,
         appBar: AppBar(
           elevation: 0,
           centerTitle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: theme?Colors.white:Colors.black,
           leading: Padding(
             padding: const EdgeInsets.only(left: 0),
             child: Icon(
@@ -3731,7 +3859,7 @@ class AboutDevice extends StatelessWidget {
                   fontFamily: "RedHatRegular",
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: theme?Colors.black:Colors.white,
                 ),
               ),
               SizedBox(
@@ -3744,7 +3872,7 @@ class AboutDevice extends StatelessWidget {
                }}, icon: Icon(Icons.volume_down,
                 color: Colors.orange, size: 40,)),
               Text("qwertyuuiopasdfghjkkfjjfffffffffffffffffjfffffffffff",
-              style: TextStyle(fontFamily: "RedHatMedium"),),
+              style: TextStyle(fontFamily: "RedHatMedium",color: theme?Colors.black:Colors.white),),
             ],
           ),
         ),
@@ -3758,11 +3886,11 @@ class AboutUs extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: theme?Colors.white:Colors.black,
         appBar: AppBar(
           elevation: 0,
           centerTitle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: theme?Colors.white:Colors.black,
           leading: Padding(
             padding: const EdgeInsets.only(left: 0),
             child: Icon(
@@ -3801,7 +3929,7 @@ class AboutUs extends StatelessWidget {
                   fontFamily: "RedHatRegular",
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: theme?Colors.black:Colors.white,
                 ),
               ),
               SizedBox(
@@ -3814,7 +3942,7 @@ class AboutUs extends StatelessWidget {
                 color: Colors.orange, size: 40,)),
 
               Text("qwertyuuiopasdfghjkkfjjfffffffffffffffffjfffffffffff",
-              style: TextStyle(fontFamily: "RedHatMedium"),),
+              style: TextStyle(fontFamily: "RedHatMedium",color: theme?Colors.black:Colors.white),),
             ],
           ),
         ),
@@ -3882,15 +4010,15 @@ class _Barcode extends State<Barcode> {
   Widget build(BuildContext context) {
     return MaterialApp(
         home: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: theme?Colors.white:Colors.black,
             appBar: AppBar(
               elevation: 0,
               centerTitle: true,
-              backgroundColor: Colors.white,
+              backgroundColor: theme?Colors.white:Colors.black,
               title: const Text(
                 'Barcode scan',
                 style: TextStyle(
-                  fontFamily: "RedHatMedium]",
+                  fontFamily: "RedHatMedium",
                   fontSize: 30,
                   color: Color(0xff96D5EB),
                 ),
@@ -3982,7 +4110,7 @@ class _Barcode extends State<Barcode> {
                                 width: 2,
                               ),
                             ),
-                            color: Colors.white,
+                            color: theme?Colors.white:Colors.black,
                             child: Text(
                               'Scan stream results',
                               style: TextStyle(
@@ -4038,7 +4166,8 @@ class _Barcode extends State<Barcode> {
 
                         Text(
                           'Scan result:',
-                          style: TextStyle(fontSize: 25,fontFamily: 'RedHatRegular',),
+                          style: TextStyle(fontSize: 25,fontFamily: 'RedHatRegular',
+                          color: theme?Colors.black:Colors.white),
                           textAlign: TextAlign.left,
                         ),
                         SizedBox(
