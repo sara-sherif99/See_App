@@ -48,6 +48,10 @@ dependencies:
   firebase_storage: ^10.2.7
   image_picker: ^0.8.4+8
   firebase_analytics: ^9.1.0
+  flutter_tts: ^3.3.3
+  firebase_in_app_messaging: ^0.6.0+7
+  awesome_notifications: ^0.6.21
+  flutter_local_notifications: ^9.3.2
 
 
 
@@ -80,6 +84,7 @@ flutter:
     - assets/images/bg7.jpg
     - assets/images/user.jpg
     - assets/audios/audio.wav
+    - assets/person.png
   #  - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -109,6 +114,26 @@ flutter:
      - family: Rubik
        fonts:
          - asset: assets/fonts/Rubik-VariableFont_wght.ttf
+
+     - family: RedHatItalic
+       fonts:
+           - asset: assets/fonts/RedHatDisplay-Italic-VariableFont_wght.ttf
+
+     - family: RedHat
+       fonts:
+           - asset: assets/fonts/RedHatDisplay-VariableFont_wght.ttf
+
+     - family: RedHatMedium
+       fonts:
+           - asset: assets/fonts/RedHatDisplay-Medium.ttf
+
+     - family: RedHatRegular
+       fonts:
+           - asset: assets/fonts/RedHatDisplay-Regular.ttf
+
+     - family: RedHatBold
+       fonts:
+           - asset: assets/fonts/RedHatDisplay-Bold.ttf
 
      - family:  MyFlutterApp
        fonts:
