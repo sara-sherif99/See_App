@@ -53,7 +53,15 @@ dependencies:
   awesome_notifications: ^0.6.21
   flutter_local_notifications: ^9.3.2
   get: ^4.6.1
-
+  permission_handler: ^9.2.0
+  agora_rtc_engine: ^5.0.0
+  flutter_ringtone_player: ^3.1.1
+  wakelock: ^0.6.1+1
+  socket_io_client: ^1.0.2
+  connectycube_sdk: ^2.0.11
+  universal_io: ^2.0.4
+  connectycube_flutter_call_kit: ^2.0.2
+  platform_device_id: ^1.0.1
 
 
 

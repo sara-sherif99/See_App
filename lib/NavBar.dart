@@ -11,7 +11,7 @@ class NavBar extends StatelessWidget {
     return Container(
       width: 250,
       child: Drawer(
-        backgroundColor: main.theme?Colors.white:Colors.black,
+       backgroundColor: main.theme?Colors.white:Colors.black,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
