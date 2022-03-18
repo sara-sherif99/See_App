@@ -62,6 +62,8 @@ dependencies:
   universal_io: ^2.0.4
   connectycube_flutter_call_kit: ^2.0.2
   platform_device_id: ^1.0.1
+  onesignal_flutter: ^3.2.8
+  flutter_incoming_call: ^0.1.1
 
 
 

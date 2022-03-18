@@ -69,7 +69,7 @@ class NavBar extends StatelessWidget {
                   await main.tts.speak("home location");
                 }
               },
-              onTap: () {Navigator.push(context,MaterialPageRoute(builder: (context) => (main.accountType == "Blind")?main.getLocation(): main.tracking()));},
+              onTap: () {Navigator.push(context,MaterialPageRoute(builder: (context) => (main.accountType == "Blind")?main.getLocation(): main.Mapt()));},
             ),
             Divider(thickness: 1,indent: 15,endIndent: 15,),
             ListTile(

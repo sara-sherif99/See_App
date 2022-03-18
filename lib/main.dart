@@ -50,18 +50,53 @@ import 'package:permission_handler/permission_handler.dart' as per;
 import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
 import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
-import 'package:connectycube_sdk/connectycube_sdk.dart';
 import 'package:universal_io/io.dart';
-import 'package:connectycube_flutter_call_kit/connectycube_flutter_call_kit.dart';
 import 'package:platform_device_id/platform_device_id.dart';
-//import 'package:agora_rtm/agora_rtm.dart';
+import 'dart:convert' as convert;
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:flutter_incoming_call/flutter_incoming_call.dart';
+import 'package:uuid/uuid.dart';
 
 
+var Token;
+var channelName;
 const APP_ID="06bae84557cd443ab0b17be7e0374fd8";
 //const APP_ID = "ea1e88e713414163ade91d064d7c8707";
 //const Token ="006ea1e88e713414163ade91d064d7c8707IADe7VDYJ5xOv0ljg9AB1gz6k3jK9dVaZ7Zot4HBIc3U/c5D6bQAAAAAEAAqKWnBwugkYgEAAQDB6CRi";
-
-
+/*Future<void> saveTokenToDatabase(String token) async {
+  FirebaseFirestore.instance
+      .collection('tokens')
+      .doc(currentUser.email)
+      .set({
+    'tokens': token,
+  });
+}*/
+final Location location = Location();
+StreamSubscription<LocationData> _locationSubscription;
+Future<void> _listenLocation() async {
+  await for (var snapshot in FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUser.uid)
+      .snapshots()) {
+    accountType = snapshot.get('account type');
+    break;
+  }
+  _locationSubscription = location.onLocationChanged.handleError((onError) {
+    print(onError);
+    _locationSubscription?.cancel();
+    _locationSubscription = null;
+  }).listen((LocationData currentlocation) async {
+    final fb = FirebaseDatabase.instance;
+    final ref = fb.ref();
+    if (accountType == 'Blind'){
+    ref
+        .child(currentUser.uid)
+        .set({
+      'latitude': currentlocation.latitude,
+      'longitude': currentlocation.longitude,
+    });}
+  });
+}
 
 var theme;
 Future themeData() async {
@@ -69,7 +104,6 @@ Future themeData() async {
   await for (var snapshot
       in info.collection('users').doc(currentUser.uid).snapshots()) {
     dc = snapshot.get('Default Contact');
-    df = snapshot.get('Default Friend');
     theme = snapshot.get('Theme');
     if (theme == "true") {
       theme = true;
@@ -77,6 +111,7 @@ Future themeData() async {
       theme = false;
     }
   }
+
 }
 
 class MapUtils {
@@ -193,12 +228,34 @@ Future getUid() async {
   var info = FirebaseFirestore.instance;
   await for (var snapshot in info.collection('users').snapshots()) {
     for (var f in snapshot.docs) {
-      if(f.get("email")==df){
+      if(f.get("email")==friend){
+        fuid = f.get("userid");
+      }
+      if(f.get("Linked Account")==currentUser.email){
         fuid = f.get("userid");
       }
     }
-    print(fuid);
+    print("fuid$fuid");
   }
+}
+Future check(x) async {
+  var info = FirebaseFirestore.instance;
+  await for (var snapshot in info.collection('users').snapshots()) {
+    for (var f in snapshot.docs) {
+      if(f.get("Default Friend")==currentUser.email){
+        showToast("already connected to another account");
+      } else if (f.get("Default Friend")==df){
+        showToast("already connected to another account");
+      }
+    }
+  }
+  var userInfo = FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUser.uid)
+      .update({
+  'Default Friend': x,
+  });
+
 }
 
 var sortedUsers = <String>[];
@@ -241,7 +298,37 @@ Future removeFriend(email) async {
 
 var requestsList = <String>[];
 var sentrequestsList = <String>[];
-/*Future acceptRequest(email) async {
+Future acceptRequest(email) async {
+  FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUser.uid)
+      .update({
+    'Linked Account': email,
+  });
+  var info = FirebaseFirestore.instance;
+  await for (var snapshot in info.collection('users').snapshots()) {
+    for (var f in snapshot.docs) {
+      if(f.get("email")== email){
+        fuid=f.id;
+        var userInfo = FirebaseFirestore
+            .instance
+            .collection('users')
+            .doc(f.id)
+            .update({
+          'Linked Account': currentUser.email,
+        });
+      }
+    }
+  }
+}
+Future removeFriend(email) async {
+  fuid="";
+  FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUser.uid)
+      .update({
+    'Linked Account': "",
+  });
   var info = FirebaseFirestore.instance;
   await for (var snapshot in info.collection('users').snapshots()) {
     for (var f in snapshot.docs) {
@@ -251,31 +338,23 @@ var sentrequestsList = <String>[];
             .collection('users')
             .doc(f.id)
             .update({
-          'Linked Accounts':
-          FieldValue.arrayUnion(
-              [finalEmail])
+          'Linked Account': "",
         });
       }
     }
   }
+}
 
-}*/
-
-var friendsList = <String>[];
-/*Future getFriends() async {
+var friend="";
+/*Future getFriend() async {
   var info = FirebaseFirestore.instance;
   await for (var snapshot
       in info.collection('users').doc(currentUser.uid).snapshots()) {
-    for (var f in snapshot.get('Linked Accounts')) {
-      if (friendsList.contains(f)) {
-      } else {
-        friendsList.add(f);
-      }
+    friend = snapshot.get('Linked Account');
     }
     print("friendsList");
-    print(friendsList);
-  }
-}*/
+    print(friend);
+  }*/
 
 var contactsList = <String>[];
 Future getC() async {
@@ -284,8 +363,7 @@ Future getC() async {
     for (var f in snapshot.docs) {
       var e = f.get("email");
       var c = f.get("Phone Number");
-      for (var i = 0; i < friendsList.length; i++) {
-        if (e == friendsList[i]) {
+        if (e == friend) {
           if (c != "") {
             var userInfo = FirebaseFirestore.instance
                 .collection('users')
@@ -295,7 +373,6 @@ Future getC() async {
             });
           }
         }
-      }
     }
   }
 }
@@ -386,28 +463,51 @@ void notify() async {
         )
       ]);
 }
+void notification()async{
+  AwesomeNotifications().actionStream.listen(
+          (receivedNotification){
+
+      }
+  );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  AwesomeNotifications().initialize(null, [
-    NotificationChannel(
-      channelKey: 'basic_channel',
-      channelName: 'Basic notifications',
-      channelDescription: 'Notification channel for basic tests',
-      defaultColor: Color(0xFF9D50DD),
-      ledColor: Colors.white,
-      importance: NotificationImportance.High,
-      channelShowBadge: true,
-      enableVibration: true,
-    )
-  ]);
-  AwesomeNotifications().actionStream.listen((event) {
-    print("event");
-    print(event.toMap().toString());
-  });
+  _listenLocation();
+  AwesomeNotifications().initialize(
+    //'resource://drawable/res_app_icon',
+    null,
+      [
+        NotificationChannel(
+            channelKey: 'basic_channel',
+            channelName: 'Basic notifications',
+            channelDescription: 'Notification channel for basic tests',
+            defaultColor: Color(0xff96D5EB),
+            ledColor: Colors.white,
+            enableVibration: true,
+          importance: NotificationImportance.High,
+
+        )
+      ],
+      debug: true
+  );
+
+  AwesomeNotifications().isNotificationAllowed().then(
+        (isAllowed) {
+      if (!isAllowed) {
+        AwesomeNotifications()
+            .requestPermissionToSendNotifications();
+      }
+      else{ }
+    },
+  );
+  notification();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  runApp(MyApp());
+  runApp( MyApp());
+  /*runApp(MultiProvider(
+    providers: [ChangeNotifierProvider<Data>(create: (_) => Data())],
+      child: MyApp()));*/
 }
 
 class MyApp extends StatelessWidget {
@@ -428,7 +528,9 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(primarySwatch: Colors.amber),
         debugShowCheckedModeBanner: false,
         home: Splash(),
+
       ),
+
     );
   }
 }
@@ -468,10 +570,10 @@ class _SplashState extends State<Splash> {
     setState(() {
       finalEmail = obtainedEmail;
     });
-    friendsList = [];
     requestsList = [];
     themeData();
-    //getFriends();
+    getUid();
+    //getFriend();
     contactsList = [];
     sortedUsers = [];
     getContacts();
@@ -493,6 +595,24 @@ class _SplashState extends State<Splash> {
       print(un);
       break;
     }
+
+    FirebaseDatabase.instance.ref().onValue.listen((event) {
+      final data = event.snapshot;
+      if (data.value != null) {
+        data.children.forEach((element) {
+          print(element.child('to').value);
+          setState(() {
+            if (element.child('1').value == finalEmail) {
+              channelName=element.key;
+            }
+            if (element.child('2').value == finalEmail) {
+              channelName=element.key;
+            }
+          });
+        });
+      }
+    });
+
   }
 
   @override
@@ -502,13 +622,7 @@ class _SplashState extends State<Splash> {
       home: Scaffold(
         body: Container(
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              //colorFilter: new ColorFilter.mode(Colors.white24.withOpacity(0.9), BlendMode.dstATop),
-              image: AssetImage("assets/images/bg5.jpg"),
-              fit: BoxFit.cover,
-            ),
-          ),
+          color: Color(0xff96D5EB),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -550,13 +664,15 @@ class _FirstScreenState extends State<FirstScreen> {
       home: Scaffold(
         body: Container(
           alignment: Alignment.center,
-          decoration: BoxDecoration(
+          //color: Color(0xff061c36),
+          color: Color(0xff96D5EB),
+          /*decoration: BoxDecoration(
             image: DecorationImage(
               //colorFilter: new ColorFilter.mode(Colors.white24.withOpacity(0.9), BlendMode.dstATop),
               image: AssetImage("assets/images/bg5.jpg"),
               fit: BoxFit.cover,
             ),
-          ),
+          ),*/
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -578,11 +694,12 @@ class _FirstScreenState extends State<FirstScreen> {
                 ),
               ),
               SizedBox(
-                height: 40,
+                height: 100,
               ),
               MaterialButton(
                 height: 50,
-                minWidth: 300,
+                minWidth: 200,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
@@ -598,7 +715,8 @@ class _FirstScreenState extends State<FirstScreen> {
                 child: Text(
                   "LOG IN",
                   style: TextStyle(
-                    color: Color(0xff061c36),
+                    color: Color(0xff96D5EB),
+                    //color: Color(0xff061c36),
                     fontFamily: 'RedHatBold',
                     fontSize: 20,
                   ),
@@ -618,7 +736,7 @@ class _FirstScreenState extends State<FirstScreen> {
                   Navigator.push(
                       context, MaterialPageRoute(builder: (context) => Sign()));
                 },
-                minWidth: 300,
+                minWidth: 200,
                 child: Text(
                   "SIGN UP",
                   style: TextStyle(
@@ -1301,7 +1419,7 @@ class _SignUp extends State<Sign> {
                               'Profile Picture': "",
                               'Theme': "true",
                               'Default Contact': "",
-                              'Default Friend': "",
+                              'Linked Account': "",
                             });
                             Navigator.pushReplacement(
                               context,
@@ -1337,7 +1455,54 @@ class HomeF extends StatefulWidget {
 }
 
 class _HomeFState extends State<HomeF> {
+  FirebaseMessaging messaging;
+  var notification;
+  bool b1 = false;
+  bool b2 = false;
+  _launchCaller() async {
+    String phoneNumber = dc;
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    await launch(launchUri.toString());
+  }
   @override
+  void dispose() {
+    notification.clear();
+    super.dispose();
+  }
+  @override
+  void initState() {
+    super.initState();
+    messaging = FirebaseMessaging.instance;
+    FirebaseDatabase.instance.ref().onValue.listen((event) {
+      final data = event.snapshot;
+      if (data.value != null) {
+        print(data.value.toString().split(" ")[0]);
+        if(data.value.toString().split(" ")[0].substring(1) == currentUser.uid){
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: 1,
+              channelKey: 'basic_channel',
+              title: 'Video Call',
+              body: friend,
+              wakeUpScreen:true,
+              category: NotificationCategory.Call,
+            ),
+          );
+        }
+        print("token $Token");
+        print(data.value);
+      }});
+
+    /*notification = AwesomeNotifications().actionStream.listen(
+            (receivedNotification){
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => Test()));
+        });*/
+
+  }
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: theme ? Colors.white : Colors.black,
@@ -1374,6 +1539,14 @@ class _HomeFState extends State<HomeF> {
         alignment: Alignment.center,
         child: Column(
           children: [
+            SizedBox(height: 20,),
+            if (friend != null) Text("Linked Account: $friend",
+              style: TextStyle(
+                color: theme ? Color(0xff063e71) : Colors.white,
+                fontSize: 25,
+                fontFamily: "RedHatMedium",
+              ),
+            ),
             SizedBox(
               height: 20,
             ),
@@ -1384,7 +1557,7 @@ class _HomeFState extends State<HomeF> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                   side: BorderSide(
-                    color: Color(0xff96D5EB),
+                    color: b1 ? Colors.red : Color(0xff96D5EB),
                     width: 2,
                   )),
               child: Column(
@@ -1392,19 +1565,92 @@ class _HomeFState extends State<HomeF> {
                 children: <Widget>[
                   Icon(
                     Icons.call,
-                    color: Color(0xff96D5EB),
+                    color: b1 ? Colors.red : Color(0xff96D5EB),
                     size: 40,
                   ),
                   Text(
                     "Call",
                     style: TextStyle(
-                      color: Color(0xff96D5EB),
+                      color: b1 ? Colors.red : Color(0xff96D5EB),
                       fontSize: 20,
+                      fontFamily: "RedHatMedium",
                     ),
                   ),
                 ],
               ),
-              onPressed: () {},
+              onLongPress: () async {
+                await tts.setSpeechRate(0.5);
+                await tts.speak("call");
+              },
+              onPressed: () async {
+                setState(() {
+                  b1 = !b1;
+                });
+                Timer(
+                  Duration(seconds: 2),
+                      () => setState(() {
+                    b1 = !b1;
+                  }),
+                );
+                if (dc != "") {
+                  _launchCaller();
+                } else {
+                  showToast("No default contact");
+                }
+                print(dc);
+              },
+            ),
+            SizedBox(
+              height: 40,
+            ),
+            MaterialButton(
+              height: 150,
+              minWidth: 300,
+              color: theme ? Colors.white : Colors.black,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  side: BorderSide(
+                    color: b2 ? Colors.red : Color(0xff96D5EB),
+                    width: 2,
+                  )),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(
+                    Icons.video_call,
+                    color: b2 ? Colors.red : Color(0xff96D5EB),
+                    size: 40,
+                  ),
+                  Text(
+                    "Video Call",
+                    style: TextStyle(
+                      color: b2 ? Colors.red : Color(0xff96D5EB),
+                      fontSize: 20,
+                      fontFamily: "RedHatMedium",
+                    ),
+                  ),
+                ],
+              ),
+              onLongPress: () async {
+                await tts.setSpeechRate(0.5);
+                await tts.speak("video call");
+              },
+              onPressed: ()  {
+                setState(() {
+                  b2 = !b2;
+                });
+                setState(() {
+                  Timer(
+                    Duration(seconds: 2),
+                        () => setState(() {
+                      b2 = !b2;
+                    }),
+                  );
+                });
+                getUid();
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => Call()));
+              },
             ),
           ],
         ),
@@ -1425,6 +1671,9 @@ class _HomeScreen extends State<Home> {
   bool b4 = false;
   bool b5 = false;
   bool b6 = false;
+  FirebaseMessaging messaging;
+  var notification;
+
   _launchCaller() async {
     String phoneNumber = dc;
     final Uri launchUri = Uri(
@@ -1432,14 +1681,50 @@ class _HomeScreen extends State<Home> {
       path: phoneNumber,
     );
     await launch(launchUri.toString());
-    //var url = "tel:"+dc;
-    //const url = 'tel:9876543210';
-    //await canLaunch(url) ? await launch(url) : throw 'Could not launch $url';
   }
-
+  @override
+  void dispose() {
+    notification.clear();
+    super.dispose();
+  }
   @override
   void initState() {
     super.initState();
+    messaging = FirebaseMessaging.instance;
+    /*messaging.getToken().then((value) {
+      print(value);
+       saveTokenToDatabase(value);
+       Token=value;
+    });
+    FirebaseMessaging.instance.onTokenRefresh.listen(saveTokenToDatabase);*/
+    FirebaseDatabase.instance.ref().onValue.listen((event) {
+      final data = event.snapshot;
+      if (data.value != null) {
+        print(data.value.toString().split(" ")[0]);
+        if(data.value.toString().split(" ")[0].substring(1) == currentUser.uid){
+          AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: 1,
+              channelKey: 'basic_channel',
+              title: 'Video Call',
+              body: friend,
+              wakeUpScreen:true,
+              category: NotificationCategory.Call,
+            ),
+          );
+        }
+        print(data.value);
+        }});
+
+    /*notification =AwesomeNotifications().actionStream.listen(
+            (receivedNotification){
+
+          Navigator.push(context,
+          MaterialPageRoute(builder: (context) => Test()));
+        }
+    );*/
+    //setupInteractedMessage();
+
   }
 
   Widget build(BuildContext context) {
@@ -1518,8 +1803,18 @@ class _HomeScreen extends State<Home> {
                       setState(() {
                         b1 = !b1;
                       });
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => Led()));
+                      AwesomeNotifications().createNotification(
+                        content: NotificationContent(
+                          id: 2,
+                          channelKey: 'basic_channel',
+                          title: 'Video Call',
+                          body: friend,
+                          wakeUpScreen:true,
+                          category: NotificationCategory.Call,
+                        ),
+                      );
+                      //Navigator.push(context,
+                        //  MaterialPageRoute(builder: (context) => Led()));
                     },
                   ),
                   MaterialButton(
@@ -1554,12 +1849,11 @@ class _HomeScreen extends State<Home> {
                       await tts.setSpeechRate(0.5);
                       await tts.speak("search");
                     },
-                    onPressed: () {
+                    onPressed: () async{
                       setState(() {
                         b2 = !b2;
                       });
-                      //Navigator.push(context,
-                        //  MaterialPageRoute(builder: (context) => Rtm()));
+
                     },
                   ),
                   MaterialButton(
@@ -1581,7 +1875,7 @@ class _HomeScreen extends State<Home> {
                           size: 40,
                         ),
                         Text(
-                          "Online Call",
+                          "Video Call",
                           style: TextStyle(
                             color: b3 ? Colors.red : Color(0xff96D5EB),
                             fontSize: 20,
@@ -1592,7 +1886,7 @@ class _HomeScreen extends State<Home> {
                     ),
                     onLongPress: () async {
                       await tts.setSpeechRate(0.5);
-                      await tts.speak("online call");
+                      await tts.speak("video call");
                     },
                     onPressed: ()  {
                       setState(() {
@@ -1608,7 +1902,7 @@ class _HomeScreen extends State<Home> {
                       });
                       getUid();
                       Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => Test()));
+                          MaterialPageRoute(builder: (context) => Call()));
                     },
                   ),
                 ],
@@ -1799,6 +2093,7 @@ class Friends extends StatefulWidget {
 
 class _FriendsState extends State<Friends> {
   final fb = FirebaseDatabase.instance;
+
   String retrievedName;
   int _selectedIndex = 0;
   FirebaseMessaging messaging;
@@ -1807,9 +2102,10 @@ class _FriendsState extends State<Friends> {
   @override
   void initState() {
     super.initState();
+
     FirebaseDatabase.instance.ref().onValue.listen((event) {
-      friendsList = [];
       sentrequestsList = [];
+      friend = "";
       final data = event.snapshot;
       if (data.value != null) {
         requestsList = [];
@@ -1825,45 +2121,22 @@ class _FriendsState extends State<Friends> {
               requestsList.add(retrievedName);
             }
             if (element.child('1').value == finalEmail) {
-              friendsList.add(element.child('2').value);
+              friend = element.child('2').value;
+              channelName=element.key;
             }
             if (element.child('2').value == finalEmail) {
-              friendsList.add(element.child('1').value);
+              friend = element.child('1').value;
+              channelName=element.key;
             }
             getC();
+            //getFriend();
           });
         });
       }
     });
-    print("friendsList");
-    print(friendsList);
-    messaging = FirebaseMessaging.instance;
-    messaging.getToken().then((value) {
-      print(value);
-    });
-    FirebaseMessaging.onMessage.listen((RemoteMessage event) {
-      print("message received");
-      print(event.notification.body);
-      showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text("Notification"),
-              content: Text(event.notification.body),
-              actions: [
-                TextButton(
-                  child: Text("Ok"),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                )
-              ],
-            );
-          });
-    });
-    FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      print('Message clicked!');
-    });
+    print("friends");
+    print(friend);
+    print("channel$channelName");
   }
 
   Widget build(BuildContext context) {
@@ -1918,20 +2191,120 @@ class _FriendsState extends State<Friends> {
                           fontFamily: "RedHatRegular",
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
-                          color: theme ? Colors.black : Colors.white,
+                          color: theme ? Color(0xff063e71) : Colors.white,
                         ),
                       ),
-                      Container(
+                      if (friend != "") Container(
                         padding: new EdgeInsets.all(20.0),
-                        child: Column(
-                          children: [
-                            friendsList.isNotEmpty
-                                ? listOfWidgets(friendsList)
-                                : SizedBox(
+                        child:Container(
+                            child:
+                            Card(
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15.0),
+                                  side: BorderSide(
+                                    color: Color(0xff96D5EB),
+                                    width: 2,
+                                  )),
+                              color: theme ? Colors.white : Colors.black,
+                              child: Column(
+                                children: <Widget>[
+                                  SizedBox(
                                     height: 10,
                                   ),
-                          ],
-                        ),
+                                  new ListTile(
+                                    leading: Icon(
+                                      Icons.person,
+                                      size: 30,
+                                      color: Color(0xff96D5EB),
+                                    ),
+                                    title: Text(friend,
+                                        style: TextStyle(
+                                          fontSize: 25.0,
+                                          fontFamily: "RedHatRegular",
+                                          color: Color(0xff96D5EB),
+                                        )),
+                                  ),
+                                  MaterialButton(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        side: BorderSide(
+                                          color: Colors.red,
+                                          width: 2,
+                                        )),
+                                    color: Colors.red,
+                                    child: Text(
+                                      'Remove',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontFamily: "RedHatBold",
+                                      ),
+                                    ),
+                                    onLongPress: () async {
+                                      if (accountType == 'Blind') {
+                                        await tts.setSpeechRate(0.5);
+                                        await tts.speak("remove" + friend);
+                                      }
+                                    },
+                                    onPressed: () async {
+                                      showDialog<String>(
+                                        context: context,
+                                        builder: (BuildContext context) => AlertDialog(
+                                          content: Text(
+                                            'Remove ' + friend + ' ?',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              color: Colors.black,
+                                              fontFamily: 'RedHatRegular',
+                                            ),
+                                          ),
+                                          actions: <Widget>[
+                                            TextButton(
+                                              onLongPress: () async {
+                                                if (accountType == 'Blind') {
+                                                  await tts.setSpeechRate(0.5);
+                                                  await tts.speak("cancel");
+                                                }
+                                              },
+                                              onPressed: () => Navigator.pop(context, 'Cancel'),
+                                              child: const Text(
+                                                'Cancel',
+                                                style: TextStyle(color: Colors.grey),
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onLongPress: () async {
+                                                if (accountType == 'Blind') {
+                                                  await tts.setSpeechRate(0.5);
+                                                  await tts.speak("Remove" + friend);
+                                                }
+                                              },
+                                              onPressed: () async {
+
+                                                removeFriend(friend);
+                                                ref
+                                                    .child(finalEmail.split("@")[0] +
+                                                    friend.split("@")[0])
+                                                    .remove();
+                                                ref
+                                                    .child(friend.split("@")[0] +
+                                                    finalEmail.split("@")[0])
+                                                    .remove();
+                                                //getFriend();
+                                                Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) => Friends()));
+                                              },
+                                              child: const Text('Remove'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),),
                       ),
                       SizedBox(
                         height: 20,
@@ -1982,105 +2355,95 @@ class _FriendsState extends State<Friends> {
                         return Container(
                           color: theme ? Colors.white : Colors.black,
                           padding: EdgeInsets.all(30),
-                          height: 100.0,
+                          height: 150.0,
                           width: double.maxFinite,
                           //color: Colors.orange,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                requestsList[index].toString(),
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 20.0,
-                                    fontFamily: "RedHatRegular"),
+                              Container(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  requestsList[index].toString(),
+                                  style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 20.0,
+                                      fontFamily: "RedHatRegular"),
+                                ),
                               ),
-                              SizedBox(
-                                width: 150,
-                              ),
-                              TextButton(
-                                  style: TextButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(100.0),
-                                    side: BorderSide(color: Colors.blue),
-                                  )),
-                                  child: Text(
-                                    "Accept",
-                                    style: TextStyle(
-                                        color: Colors.blue,
-                                        fontFamily: 'RedHatMedium'),
-                                  ),
-                                  onLongPress: () async {
-                                    if (accountType == 'Blind') {
-                                      await tts.setSpeechRate(0.5);
-                                      await tts.speak(
-                                          "Accept " + requestsList[index]);
-                                    }
-                                  },
-                                  onPressed: () async {
-                                    //acceptRequest(requestsList[index]);
-                                    setState(() {
-                                      p = !p;
-                                      print(p);
-                                    });
-                                    /*FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(currentUser.uid)
-                                        .update({
-                                      'Requests':
-                                      FieldValue.arrayRemove([requestsList[index]])
-                                    });
-                                    FirebaseFirestore
-                                        .instance
-                                        .collection('users')
-                                        .doc(currentUser.uid)
-                                        .update({
-                                      'Linked Accounts':
-                                      FieldValue.arrayUnion(
-                                          [requestsList[index]])
-                                    });*/
-                                    ref
-                                        .child(finalEmail.split("@")[0] +
-                                            requestsList[index].split("@")[0])
-                                        .set({
-                                      '1': requestsList[index],
-                                      '2': finalEmail,
-                                    });
-                                    ref
-                                        .child(
+                              Row( mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                      style: TextButton.styleFrom(
+                                          shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(100.0),
+                                        side: BorderSide(color: Colors.blue),
+                                      )),
+                                      child: Text(
+                                        "Accept",
+                                        style: TextStyle(
+                                            color: Colors.blue,
+                                            fontFamily: 'RedHatMedium'),
+                                      ),
+                                      onLongPress: () async {
+                                        if (accountType == 'Blind') {
+                                          await tts.setSpeechRate(0.5);
+                                          await tts.speak(
+                                              "Accept " + requestsList[index]);
+                                        }
+                                      },
+                                      onPressed: () async {
+                                        acceptRequest(requestsList[index]);
+                                        setState(() {
+                                          p = !p;
+                                          print(p);
+                                        });
+                                        ref
+                                            .child(finalEmail.split("@")[0] +
+                                                requestsList[index].split("@")[0])
+                                            .set({
+                                          '1': requestsList[index],
+                                          '2': finalEmail,
+                                        });
+                                        ref
+                                            .child(
+                                                requestsList[index].split("@")[0] +
+                                                    finalEmail.split("@")[0])
+                                            .remove();
+                                        requestsList.remove(requestsList[index]);
+                                        //getFriend();
+                                      }),
+                                  SizedBox(width: 10,),
+                                  TextButton(
+                                      style: TextButton.styleFrom(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(100.0),
+                                            side: BorderSide(color: Colors.red),
+                                          )),
+                                      child: Text(
+                                        "Delete",
+                                        style: TextStyle(
+                                            color: Colors.red,
+                                            fontFamily: 'RedHatMedium'),
+                                      ),
+                                      onLongPress: () async {
+                                        if (accountType == 'Blind') {
+                                          await tts.setSpeechRate(0.5);
+                                          await tts.speak(
+                                              "Delete " + requestsList[index]);
+                                        }
+                                      },
+                                      onPressed: () async {
+                                        ref
+                                            .child(
                                             requestsList[index].split("@")[0] +
                                                 finalEmail.split("@")[0])
-                                        .remove();
-                                    requestsList.remove(requestsList[index]);
-                                    //getFriends();
-                                  }),
-                              TextButton(
-                                  style: TextButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(100.0),
-                                    side: BorderSide(color: Colors.red),
-                                  )),
-                                  child: Text(
-                                    "Delete",
-                                    style: TextStyle(
-                                        color: Colors.red,
-                                        fontFamily: 'RedHatMedium'),
-                                  ),
-                                  onLongPress: () async {
-                                    if (accountType == 'Blind') {
-                                      await tts.setSpeechRate(0.5);
-                                      await tts.speak(
-                                          "Delete " + requestsList[index]);
-                                    }
-                                  },
-                                  onPressed: () async {
-                                    ref
-                                        .child(
-                                            requestsList[index].split("@")[0] +
-                                                finalEmail.split("@")[0])
-                                        .remove();
-                                    requestsList.remove(requestsList[index]);
-                                  }),
+                                            .remove();
+                                        requestsList.remove(requestsList[index]);
+                                      }),
+                                ],
+                              ),
+
                             ],
                           ),
                         );
@@ -2132,168 +2495,6 @@ class _FriendsState extends State<Friends> {
     });
   }
 
-  Widget listOfWidgets(List<String> item) {
-    final ref = fb.ref();
-    List<Widget> list = [];
-    for (var i = 0; i < item.length; i++) {
-      list.add(Container(
-          child: Card(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0),
-            side: BorderSide(
-              color: Color(0xff96D5EB),
-              width: 2,
-            )),
-        color: theme ? Colors.white : Colors.black,
-        child: Column(
-          children: <Widget>[
-            SizedBox(
-              height: 10,
-            ),
-            new ListTile(
-              leading: Icon(
-                Icons.person,
-                size: 30,
-                color: Color(0xff96D5EB),
-              ),
-              title: Text(item[i],
-                  style: TextStyle(
-                    fontSize: 25.0,
-                    fontFamily: "RedHatRegular",
-                    color: Color(0xff96D5EB),
-                  )),
-            ),
-            MaterialButton(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: BorderSide(
-                    color: Colors.red,
-                    width: 2,
-                  )),
-              color: Colors.red,
-              child: Text(
-                'Remove',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: "RedHatBold",
-                ),
-              ),
-              onLongPress: () async {
-                if (accountType == 'Blind') {
-                  await tts.setSpeechRate(0.5);
-                  await tts.speak("remove" + item[i]);
-                }
-              },
-              onPressed: () async {
-                showDialog<String>(
-                  context: context,
-                  builder: (BuildContext context) => AlertDialog(
-                    content: Text(
-                      'Remove ' + item[i] + ' ?',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.black,
-                        fontFamily: 'RedHatRegular',
-                      ),
-                    ),
-                    actions: <Widget>[
-                      TextButton(
-                        onLongPress: () async {
-                          if (accountType == 'Blind') {
-                            await tts.setSpeechRate(0.5);
-                            await tts.speak("cancel");
-                          }
-                        },
-                        onPressed: () => Navigator.pop(context, 'Cancel'),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                      TextButton(
-                        onLongPress: () async {
-                          if (accountType == 'Blind') {
-                            await tts.setSpeechRate(0.5);
-                            await tts.speak("Remove" + item[i]);
-                          }
-                        },
-                        onPressed: () async {
-                          ref
-                              .child(finalEmail.split("@")[0] +
-                                  item[i].split("@")[0])
-                              .remove();
-                          ref
-                              .child(item[i].split("@")[0] +
-                                  finalEmail.split("@")[0])
-                              .remove();
-                          //removeFriend(friendsList[i]);
-                          /*setState(() {
-                      FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(currentUser.uid)
-                          .update({
-                        'Linked Accounts':
-                        FieldValue.arrayRemove([friendsList[i]]),
-                      });
-                      friendsList.remove(friendsList[i]);
-                      //getFriends();
-                    });*/
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => Friends()));
-                        },
-                        child: const Text('Remove'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            if (item[i] != df)
-              MaterialButton(
-                onLongPress: () async {
-                  if (accountType == 'Blind') {
-                    await tts.setSpeechRate(0.2);
-                    await tts.speak("set" + item[i] + "as default friend");
-                  }
-                },
-                onPressed: () {
-                  df = item[i].toString();
-                  var userInfo = FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(currentUser.uid)
-                      .update({
-                    'Default Friend': item[i].toString(),
-                  });
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => Friends()));
-                },
-                child: Text(
-                  "Set as default",
-                  style: TextStyle(
-                    color: Color(0xff96D5EB),
-                    fontFamily: "RedHatBold",
-                  ),
-                ),
-              ),
-            if (item[i] == df)
-              Text(
-                "Default",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: "RedHatBold",
-                ),
-              ),
-          ],
-        ),
-      )));
-    }
-    return Wrap(
-        spacing: 5.0, // gap between adjacent chips
-        runSpacing: 2.0, // gap between lines
-        children: list);
-  }
 }
 
 class Add extends StatefulWidget {
@@ -2453,7 +2654,7 @@ class _AddState extends State<Add> {
                                             color: Colors.red,
                                             fontFamily: 'RedHatMedium'),
                                       )
-                                    : (friendsList.contains(sortedUsers[index]))
+                                    : (friend == sortedUsers[index])
                                         ? Text(
                                             "friend",
                                             style: TextStyle(
@@ -2623,7 +2824,7 @@ class _SettingsState extends State<Settings> {
                       fontFamily: "RedHatRegular",
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
-                      color: theme ? Colors.black : Colors.white),
+                      color: theme ? Color(0xff063e71) : Colors.white),
                 ),
               ),
               SizedBox(
@@ -4248,7 +4449,7 @@ class AboutDevice extends StatelessWidget {
                   fontFamily: "RedHatRegular",
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: theme ? Colors.black : Colors.white,
+                  color: theme ? Color(0xff063e71): Colors.white,
                 ),
               ),
               SizedBox(
@@ -4330,7 +4531,7 @@ class AboutUs extends StatelessWidget {
                   fontFamily: "RedHatRegular",
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: theme ? Colors.black : Colors.white,
+                  color: theme ? Color(0xff063e71) : Colors.white,
                 ),
               ),
               SizedBox(
@@ -4631,647 +4832,12 @@ class _Barcode extends State<Barcode> {
   }
 }
 
-
-class IndexPage extends StatefulWidget {
+class Call extends StatefulWidget {
   @override
-  State<StatefulWidget> createState() => IndexState();
-}
-class IndexState extends State<IndexPage> {
-  /*final fb = FirebaseDatabase.instance;
-  void initState() {
-    super.initState();
-    FirebaseDatabase.instance.ref().onValue.listen((event) {
-      final data = event.snapshot;
-      if (data.value != null) {
-        data.children.forEach((element) {
-          u=element.child("Sender");
-          if(element.key.contains(currentUser.uid)){
-            onJoin();
-          }
-          print(element.key);
-        });
-      }
-    });
-  }*/
-
-  /// create a channelController to retrieve text value
-  final _channelController = TextEditingController();
-
-  /// if channel textField is validated to have error
-  bool _validateError = false;
-
-  ClientRole _role = ClientRole.Broadcaster;
-
-  @override
-  void dispose() {
-    // dispose input controller
-    _channelController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    //final ref = fb.ref();
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: theme ? Colors.white : Colors.black,
-        title: const Text(
-          'Online Call',
-          style: TextStyle(
-            fontFamily: "RedHatMedium",
-            fontSize: 30,
-            color: Color(0xff96D5EB),
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.keyboard_backspace),
-          color: Color(0xff96D5EB),
-          onPressed: () {
-            Navigator.of(context).pop();
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => Home()));
-          },
-          iconSize: 30,
-        ),
-      ),
-      backgroundColor: theme ? Colors.white : Colors.black,
-      body: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          height: 400,
-          child: Column(
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                      child: TextField(
-                    controller: _channelController,
-                    decoration: InputDecoration(
-                      errorText:
-                          _validateError ? 'Channel name is mandatory' : null,
-                      border: UnderlineInputBorder(
-                        borderSide: BorderSide(width: 1),
-                      ),
-                      hintText: 'Channel name',
-                    ),
-                  ))
-                ],
-              ),
-              Column(
-                children: [
-                  ListTile(
-                    title: Text(ClientRole.Broadcaster.toString()),
-                    leading: Radio(
-                      value: ClientRole.Broadcaster,
-                      groupValue: _role,
-                      onChanged: (ClientRole value) {
-                        setState(() {
-                          _role = value;
-                        });
-                      },
-                    ),
-                  ),
-                  ListTile(
-                    title: Text(ClientRole.Audience.toString()),
-                    leading: Radio(
-                      value: ClientRole.Audience,
-                      groupValue: _role,
-                      onChanged: (ClientRole value) {
-                        setState(() {
-                          _role = value;
-                        });
-                      },
-                    ),
-                  )
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: onJoin,
-                        child: Text('Join'),
-                        style: ButtonStyle(
-                            backgroundColor:
-                                MaterialStateProperty.all(Colors.blueAccent),
-                            foregroundColor:
-                                MaterialStateProperty.all(Colors.white)),
-                      ),
-                    ),
-                    /*Row(
-                      children: [
-                        MaterialButton(
-                          child: Text("Call"),
-                            onPressed: (){
-                              ref
-                                  .child(currentUser.uid+" "+fuid)
-                                  .set({
-                                'State': "sent",
-                                'Channel name': "See",
-                                'Token': Token,
-                                'AppID':APP_ID,
-                                'Sender':currentUser.email,
-                                'Receiver':df,
-                              });
-                            })
-                      ],
-                    ),*/
-                    // Expanded(
-                    //   child: RaisedButton(
-                    //     onPressed: onJoin,
-                    //     child: Text('Join'),
-                    //     color: Colors.blueAccent,
-                    //     textColor: Colors.white,
-                    //   ),
-                    // )
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> onJoin() async {
-    // update input validation
-    setState(() {
-      _channelController.text.isEmpty
-          ? _validateError = true
-          : _validateError = false;
-    });
-    //if (_channelController.text.isNotEmpty) {
-      // await for camera and mic permissions before pushing video page
-       await _handleCameraAndMic(per.Permission.camera);
-       await _handleCameraAndMic(per.Permission.microphone);
-      // push video page with given channel name
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CallPage(
-            channelName: _channelController.text,
-            role: _role,
-          ),
-        ),
-      );
-    //}
-  }
-
-  Future<void> _handleCameraAndMic(per.Permission permission) async {
-    final status = await permission.request();
-    print(status);
-  }
-}
-class CallPage extends StatefulWidget {
-  /// non-modifiable channel name of the page
-  final String channelName;
-
-  /// non-modifiable client role of the page
-  final ClientRole role;
-
-  /// Creates a call page with given channel name.
-  const CallPage({Key key, this.channelName, this.role}) : super(key: key);
-
-  @override
-  _CallPageState createState() => _CallPageState();
-}
-class _CallPageState extends State<CallPage> {
-  final _users = <int>[];
-  final _infoStrings = <String>[];
-  bool muted = false;
-  RtcEngine _engine;
-
-  @override
-  void dispose() {
-    // clear users
-    _users.clear();
-    // destroy sdk
-    _engine.leaveChannel();
-    _engine.destroy();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // initialize agora sdk
-    initialize();
-  }
-
-  Future<void> initialize() async {
-    if (APP_ID.isEmpty) {
-      setState(() {
-        _infoStrings.add(
-          'APP_ID missing, please provide your APP_ID in settings.dart',
-        );
-        _infoStrings.add('Agora Engine is not starting');
-      });
-      return;
-    }
-
-    await _initAgoraRtcEngine();
-    _addAgoraEventHandlers();
-    await _engine.enableWebSdkInteroperability(true);
-    VideoEncoderConfiguration configuration = VideoEncoderConfiguration();
-    configuration.dimensions = VideoDimensions(width: 1920, height: 1080);
-    await _engine.setVideoEncoderConfiguration(configuration);
-    await _engine.joinChannel(null, widget.channelName, null, 0);
-  }
-
-  /// Create agora sdk instance and initialize
-  Future<void> _initAgoraRtcEngine() async {
-    _engine = await RtcEngine.create(APP_ID);
-    await _engine.enableVideo();
-    await _engine.setChannelProfile(ChannelProfile.LiveBroadcasting);
-    await _engine.setClientRole(widget.role);
-  }
-
-  /// Add agora event handlers
-  void _addAgoraEventHandlers() {
-    _engine.setEventHandler(RtcEngineEventHandler(error: (code) {
-      setState(() {
-        final info = 'onError: $code';
-        _infoStrings.add(info);
-      });
-    }, joinChannelSuccess: (channel, uid, elapsed) {
-      setState(() {
-        final info = 'onJoinChannel: $channel, uid: $uid';
-        _infoStrings.add(info);
-      });
-    }, leaveChannel: (stats) {
-      setState(() {
-        _infoStrings.add('onLeaveChannel');
-        _users.clear();
-      });
-    }, userJoined: (uid, elapsed) {
-      setState(() {
-        final info = 'userJoined: $uid';
-        _infoStrings.add(info);
-        _users.add(uid);
-      });
-    }, userOffline: (uid, elapsed) {
-      setState(() {
-        final info = 'userOffline: $uid';
-        _infoStrings.add(info);
-        _users.remove(uid);
-      });
-    }, firstRemoteVideoFrame: (uid, width, height, elapsed) {
-      setState(() {
-        final info = 'firstRemoteVideo: $uid ${width}x $height';
-        _infoStrings.add(info);
-      });
-    }));
-  }
-
-  /// Helper function to get list of native views
-  List<Widget> _getRenderViews() {
-    final List<StatefulWidget> list = [];
-    if (widget.role == ClientRole.Broadcaster) {
-      list.add(RtcLocalView.SurfaceView());
-    }
-    _users.forEach((int uid) => list.add(RtcRemoteView.SurfaceView(uid: uid,channelId: null,)));
-    return list;
-  }
-
-  /// Video view wrapper
-  Widget _videoView(view) {
-    return Expanded(child: Container(child: view));
-  }
-
-  /// Video view row wrapper
-  Widget _expandedVideoRow(List<Widget> views) {
-    final wrappedViews = views.map<Widget>(_videoView).toList();
-    return Expanded(
-      child: Row(
-        children: wrappedViews,
-      ),
-    );
-  }
-
-  /// Video layout wrapper
-  Widget _viewRows() {
-    final views = _getRenderViews();
-    switch (views.length) {
-      case 1:
-        return Container(
-            child: Column(
-          children: <Widget>[_videoView(views[0])],
-        ));
-      case 2:
-        return Container(
-            child: Column(
-          children: <Widget>[
-            _expandedVideoRow([views[0]]),
-            _expandedVideoRow([views[1]])
-          ],
-        ));
-      case 3:
-        return Container(
-            child: Column(
-          children: <Widget>[
-            _expandedVideoRow(views.sublist(0, 2)),
-            _expandedVideoRow(views.sublist(2, 3))
-          ],
-        ));
-      case 4:
-        return Container(
-            child: Column(
-          children: <Widget>[
-            _expandedVideoRow(views.sublist(0, 2)),
-            _expandedVideoRow(views.sublist(2, 4))
-          ],
-        ));
-      default:
-    }
-    return Container();
-  }
-
-  /// Toolbar layout
-  Widget _toolbar() {
-    if (widget.role == ClientRole.Audience) return Container();
-    return Container(
-      alignment: Alignment.bottomCenter,
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          RawMaterialButton(
-            onPressed: _onToggleMute,
-            child: Icon(
-              muted ? Icons.mic_off : Icons.mic,
-              color: muted ? Colors.white : Colors.blueAccent,
-              size: 20.0,
-            ),
-            shape: CircleBorder(),
-            elevation: 2.0,
-            fillColor: muted ? Colors.blueAccent : Colors.white,
-            padding: const EdgeInsets.all(12.0),
-          ),
-          RawMaterialButton(
-            onPressed: () => _onCallEnd(context),
-            child: Icon(
-              Icons.call_end,
-              color: Colors.white,
-              size: 35.0,
-            ),
-            shape: CircleBorder(),
-            elevation: 2.0,
-            fillColor: Colors.redAccent,
-            padding: const EdgeInsets.all(15.0),
-          ),
-          RawMaterialButton(
-            onPressed: _onSwitchCamera,
-            child: Icon(
-              Icons.switch_camera,
-              color: Colors.blueAccent,
-              size: 20.0,
-            ),
-            shape: CircleBorder(),
-            elevation: 2.0,
-            fillColor: Colors.white,
-            padding: const EdgeInsets.all(12.0),
-          )
-        ],
-      ),
-    );
-  }
-
-  /// Info panel to show logs
-  Widget _panel() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      alignment: Alignment.bottomCenter,
-      child: FractionallySizedBox(
-        heightFactor: 0.5,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 48),
-          child: ListView.builder(
-            reverse: true,
-            itemCount: _infoStrings.length,
-            itemBuilder: (BuildContext context, int index) {
-              if (_infoStrings.isEmpty) {
-                return Text(
-                    "null"); // return type can't be null, a widget was required
-              }
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 3,
-                  horizontal: 10,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 2,
-                          horizontal: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.yellowAccent,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          _infoStrings[index],
-                          style: TextStyle(color: Colors.blueGrey),
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _onCallEnd(BuildContext context) {
-    /*final fb = FirebaseDatabase.instance;
-    final ref = fb.ref();
-    if (u==currentUser.email) {
-      ref
-          .child(currentUser.uid + " " + fuid)
-          .remove();
-    }
-    else {
-      ref
-          .child(fuid + " " + currentUser.uid)
-          .remove();
-    }*/
-    Navigator.pop(context);
-  }
-
-  void _onToggleMute() {
-    setState(() {
-      muted = !muted;
-    });
-    _engine.muteLocalAudioStream(muted);
-  }
-
-  void _onSwitchCamera() {
-    _engine.switchCamera();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Agora Flutter QuickStart'),
-      ),
-      backgroundColor: Colors.black,
-      body: Center(
-        child: Stack(
-          children: <Widget>[
-            _viewRows(),
-            _panel(),
-            _toolbar(),
-          ],
-        ),
-      ),
-    );
-  }
+  _CallState createState() => _CallState();
 }
 
-/*audioplayers: ^0.20.1
-  import 'package:audioplayers/audioplayers.dart';
-  final player = AudioCache();
-  player.play('audio.wav');*/
-
-/*class Scanner extends StatefulWidget {
-  @override
-  _ScannerState createState() => _ScannerState();
-}
-
-class _ScannerState extends State<Scanner> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController controller;
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(
-          "SCAN",
-          style: TextStyle(
-            fontFamily: "RubikItalic",
-            fontSize: 30,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Color(0xff96D5EB),
-        leading: IconButton(
-          icon: Icon(Icons.keyboard_backspace),
-          color: Colors.white,
-          onPressed: () {
-            Navigator.of(context).pop();
-            Navigator.push(context,MaterialPageRoute(builder: (context) => Home()));
-          },
-          iconSize: 30,
-        ),
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: <Widget>[
-              Expanded(
-                flex: 5,
-                child: Stack(
-                  children: [
-                    QRView(
-                      key: qrKey,
-                      onQRViewCreated: _onQRViewCreated,
-                      overlay: QrScannerOverlayShape(
-                        borderWidth: 10,
-                        borderLength: 20,
-                        borderRadius: 10,
-                        cutOutSize: MediaQuery.of(context).size.width*0.8,
-                      ),
-                    ),
-                    Center(
-                      child: Container(
-                        width: 300,
-                        height: 300,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.red,
-                            width: 4,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Center(
-                  child: Text('Scan QR or Barcode'),
-                ),
-              )
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) async {
-      controller.pauseCamera();
-      if (await canLaunch(scanData.code)) {
-        await launch(scanData.code);
-        controller.resumeCamera();
-      } else {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Could not find viable url'),
-              content: SingleChildScrollView(
-                child: ListBody(
-                  children: <Widget>[
-                    Text('Barcode Type: ${describeEnum(scanData.format)}'),
-                    Text('Data: ${scanData.code}'),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: Text('Ok'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        ).then((value) => controller.resumeCamera());
-      }
-    });
-  }
-}*/
-class Test extends StatefulWidget {
-  @override
-  _TestState createState() => _TestState();
-}
-
-class _TestState extends State<Test> {
+class _CallState extends State<Call> {
   int _remoteUid;
    RtcEngine _engine;
   final _users = <int>[];
@@ -5293,28 +4859,14 @@ class _TestState extends State<Test> {
   @override
   void initState() {
     super.initState();
-    FirebaseDatabase.instance.ref().onValue.listen((event) {
-      final data = event.snapshot;
-      if (data.value != null) {
-        data.children.forEach((element) {
-          u=element.child("Sender").value;
-          if(element.key.contains(currentUser.uid)){
-          }
-          print(element.key);
-          print(u);
-        });
-      }
-    });
     final ref = fb.ref();
     ref
-        .child(currentUser.uid+" "+fuid)
+        .child(fuid+" "+currentUser.uid)
         .set({
-      'State': "sent",
-      'Channel name': "See",
-      //'Token': Token,
+      'Channel name': channelName,
       'AppID':APP_ID,
       'Sender':currentUser.email,
-      'Receiver':df,
+      'Receiver':friend,
     });
     initAgora();
   }
@@ -5346,16 +4898,13 @@ class _TestState extends State<Test> {
       ),
     );
 
-    await _engine.joinChannel(null, "test", null, 0);
+    await _engine.joinChannel(null, channelName , null, 0);
   }
 
   // Create UI with local view and remote view
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agora Video Call'),
-      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Wrap( //will break to another line on overflow
         direction: Axis.horizontal, //use vertical to show  on vertical axis
@@ -5542,420 +5091,275 @@ class _LedState extends State<Led> {
   }
 }
 
-
-/*class Rtm extends StatefulWidget {
+class Track extends StatefulWidget {
   @override
-  _RtmState createState() => _RtmState();
+  _TrackState createState() => _TrackState();
 }
 
-class _RtmState extends State<Rtm> {
-  bool _isLogin = false;
-  bool _isInChannel = false;
-
-  final _userNameController = TextEditingController();
-  final _peerUserIdController = TextEditingController();
-  final _peerMessageController = TextEditingController();
-  final _invitationController = TextEditingController();
-  final _channelNameController = TextEditingController();
-  final _channelMessageController = TextEditingController();
-
-  final _infoStrings = <String>[];
-
-  AgoraRtmClient _client;
-  AgoraRtmChannel _channel;
+class _TrackState extends State<Track> {
+  var lat;
+  var log;
 
   @override
   void initState() {
     super.initState();
-    _createClient();
+
+    _requestPermission();
+    location.changeSettings(interval: 300, accuracy: LocationAccuracy.high);
+    location.enableBackgroundMode(enable: true);
+    FirebaseDatabase.instance.ref().onValue.listen((event) {
+      final data = event.snapshot;
+      if (data.value != null) {
+        data.children.forEach((element) {
+          print(element.key);
+          print(element.child('latitude').value);
+          print(element.child('longitude').value);
+          setState(() {
+            if (element.child('latitude').value != null){
+              lat = element.child('latitude').value;
+              log= element.child('longitude').value;
+            }
+            if (element.key == fuid){
+              lat = element.child('latitude').value;
+              log= element.child('longitude').value;
+            }
+
+          });
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-          appBar: AppBar(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: theme ? Colors.white : Colors.black,
-        title: const Text(
-          'Online Call',
-          style: TextStyle(
-            fontFamily: "RedHatMedium",
-            fontSize: 30,
-            color: Color(0xff96D5EB),
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.keyboard_backspace),
-          color: Color(0xff96D5EB),
-          onPressed: () {
-            Navigator.of(context).pop();
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => Home()));
-          },
-          iconSize: 30,
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('live location tracker'),
       ),
-          body: Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildLogin(),
-                _buildQueryOnlineStatus(),
-                _buildSendPeerMessage(),
-                _buildSendLocalInvitation(),
-                _buildJoinChannel(),
-                _buildGetMembers(),
-                _buildSendChannelMessage(),
-                _buildInfoList(),
-              ],
-            ),
-          )),
+      body: Column(
+        children: [
+          TextButton(
+              onPressed: () {
+                _stopListening();
+              },
+              child: Text('stop live location')),
+          Expanded(
+              child: StreamBuilder(
+                stream:
+                FirebaseFirestore.instance.collection('location').snapshots(),
+                builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  return ListView.builder(
+                      itemCount: snapshot.data?.docs.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title:
+                          Text(snapshot.data.docs[index]['name'].toString()),
+                          subtitle: Row(
+                            children: [
+                              Text(snapshot.data.docs[index]['latitude']
+                                  .toString()),
+                              SizedBox(
+                                width: 20,
+                              ),
+                              Text(snapshot.data.docs[index]['longitude']
+                                  .toString()),
+                            ],
+                          ),
+                          trailing: IconButton(
+                            icon: Icon(Icons.directions),
+                            onPressed: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (context) =>
+                                      MyMap(snapshot.data.docs[index].id)));
+                            },
+                          ),
+                        );
+                      });
+                },
+              )),
+        ],
+      ),
     );
   }
 
-  void _createClient() async {
-    _client = await AgoraRtmClient.createInstance(APP_ID);
-    _client?.onMessageReceived = (AgoraRtmMessage message, String peerId) {
-      _log("Peer msg: " + peerId + ", msg: " + (message.text));
-    };
-    _client?.onConnectionStateChanged = (int state, int reason) {
-      _log('Connection state changed: ' +
-          state.toString() +
-          ', reason: ' +
-          reason.toString());
-      if (state == 5) {
-        _client?.logout();
-        _log('Logout.');
-        setState(() {
-          _isLogin = false;
-        });
-      }
-    };
-    _client?.onLocalInvitationReceivedByPeer =
-        (AgoraRtmLocalInvitation invite) {
-      _log(
-          'Local invitation received by peer: ${invite.calleeId}, content: ${invite.content}');
-    };
-    _client?.onRemoteInvitationReceivedByPeer =
-        (AgoraRtmRemoteInvitation invite) {
-      _log(
-          'Remote invitation received by peer: ${invite.callerId}, content: ${invite.content}');
-    };
-  }
 
-  Future<AgoraRtmChannel> _createChannel(String name) async {
-    AgoraRtmChannel channel = await _client?.createChannel(name);
-    if (channel != null) {
-      channel.onMemberJoined = (AgoraRtmMember member) {
-        _log("Member joined: " +
-            member.userId +
-            ', channel: ' +
-            member.channelId);
-      };
-      channel.onMemberLeft = (AgoraRtmMember member) {
-        _log(
-            "Member left: " + member.userId + ', channel: ' + member.channelId);
-      };
-      channel.onMessageReceived =
-          (AgoraRtmMessage message, AgoraRtmMember member) {
-        _log("Channel msg: " + member.userId + ", msg: " + message.text);
-      };
-    }
-    return channel;
-  }
 
-  static TextStyle textStyle = TextStyle(fontSize: 18, color: Colors.blue);
-
-  Widget _buildLogin() {
-    return Row(children: <Widget>[
-      _isLogin
-          ? new Expanded(
-          child: new Text('User Id: ' + _userNameController.text,
-              style: textStyle))
-          : new Expanded(
-          child: new TextField(
-              controller: _userNameController,
-              decoration: InputDecoration(hintText: 'Input your user id'))),
-      new OutlineButton(
-        child: Text(_isLogin ? 'Logout' : 'Login', style: textStyle),
-        onPressed: _toggleLogin,
-      )
-    ]);
-  }
-
-  Widget _buildQueryOnlineStatus() {
-    if (!_isLogin) {
-      return Container();
-    }
-    return Row(children: <Widget>[
-      new Expanded(
-          child: new TextField(
-              controller: _peerUserIdController,
-              decoration: InputDecoration(hintText: 'Input peer user id'))),
-      new OutlineButton(
-        child: Text('Query Online', style: textStyle),
-        onPressed: _toggleQuery,
-      )
-    ]);
-  }
-
-  Widget _buildSendPeerMessage() {
-    if (!_isLogin) {
-      return Container();
-    }
-    return Row(children: <Widget>[
-      new Expanded(
-          child: new TextField(
-              controller: _peerMessageController,
-              decoration: InputDecoration(hintText: 'Input peer message'))),
-      new OutlineButton(
-        child: Text('Send to Peer', style: textStyle),
-        onPressed: _toggleSendPeerMessage,
-      )
-    ]);
-  }
-
-  Widget _buildSendLocalInvitation() {
-    if (!_isLogin) {
-      return Container();
-    }
-    return Row(children: <Widget>[
-      new Expanded(
-          child: new TextField(
-              controller: _invitationController,
-              decoration:
-              InputDecoration(hintText: 'Input invitation content'))),
-      new OutlineButton(
-        child: Text('Send local invitation', style: textStyle),
-        onPressed: _toggleSendLocalInvitation,
-      )
-    ]);
-  }
-
-  Widget _buildJoinChannel() {
-    if (!_isLogin) {
-      return Container();
-    }
-    return Row(children: <Widget>[
-      _isInChannel
-          ? new Expanded(
-          child: new Text('Channel: ' + _channelNameController.text,
-              style: textStyle))
-          : new Expanded(
-          child: new TextField(
-              controller: _channelNameController,
-              decoration: InputDecoration(hintText: 'Input channel id'))),
-      new OutlineButton(
-        child: Text(_isInChannel ? 'Leave Channel' : 'Join Channel',
-            style: textStyle),
-        onPressed: _toggleJoinChannel,
-      )
-    ]);
-  }
-
-  Widget _buildSendChannelMessage() {
-    if (!_isLogin || !_isInChannel) {
-      return Container();
-    }
-    return Row(children: <Widget>[
-      new Expanded(
-          child: new TextField(
-              controller: _channelMessageController,
-              decoration: InputDecoration(hintText: 'Input channel message'))),
-      new OutlineButton(
-        child: Text('Send to Channel', style: textStyle),
-        onPressed: _toggleSendChannelMessage,
-      )
-    ]);
-  }
-
-  Widget _buildGetMembers() {
-    if (!_isLogin || !_isInChannel) {
-      return Container();
-    }
-    return Row(children: <Widget>[
-      new OutlineButton(
-        child: Text('Get Members in Channel', style: textStyle),
-        onPressed: _toggleGetMembers,
-      )
-    ]);
-  }
-
-  Widget _buildInfoList() {
-    return Expanded(
-        child: Container(
-            child: ListView.builder(
-              itemExtent: 24,
-              itemBuilder: (context, i) {
-                return ListTile(
-                  contentPadding: const EdgeInsets.all(0.0),
-                  title: Text(_infoStrings[i]),
-                );
-              },
-              itemCount: _infoStrings.length,
-            )));
-  }
-
-  void _toggleLogin() async {
-    if (_isLogin) {
-      try {
-        await _client?.logout();
-        _log('Logout success.');
-
-        setState(() {
-          _isLogin = false;
-          _isInChannel = false;
-        });
-      } catch (errorCode) {
-        _log('Logout error: ' + errorCode.toString());
-      }
-    } else {
-      String userId = _userNameController.text;
-      if (userId.isEmpty) {
-        _log('Please input your user id to login.');
-        return;
-      }
-
-      try {
-        await _client?.login(null, userId);
-        _log('Login success: ' + userId);
-        setState(() {
-          _isLogin = true;
-        });
-      } catch (errorCode) {
-        _log('Login error: ' + errorCode.toString());
-      }
-    }
-  }
-
-  void _toggleQuery() async {
-    String peerUid = _peerUserIdController.text;
-    if (peerUid.isEmpty) {
-      _log('Please input peer user id to query.');
-      return;
-    }
-    try {
-      Map<dynamic, dynamic> result =
-      await _client?.queryPeersOnlineStatus([peerUid]);
-      _log('Query result: ' + result.toString());
-    } catch (errorCode) {
-      _log('Query error: ' + errorCode.toString());
-    }
-  }
-
-  void _toggleSendPeerMessage() async {
-    String peerUid = _peerUserIdController.text;
-    if (peerUid.isEmpty) {
-      _log('Please input peer user id to send message.');
-      return;
-    }
-
-    String text = _peerMessageController.text;
-    if (text.isEmpty) {
-      _log('Please input text to send.');
-      return;
-    }
-
-    try {
-      AgoraRtmMessage message = AgoraRtmMessage.fromText(text);
-      _log(message.text);
-      await _client?.sendMessageToPeer(peerUid, message, false);
-      _log('Send peer message success.');
-    } catch (errorCode) {
-      _log('Send peer message error: ' + errorCode.toString());
-    }
-  }
-
-  void _toggleSendLocalInvitation() async {
-    String peerUid = _peerUserIdController.text;
-    if (peerUid.isEmpty) {
-      _log('Please input peer user id to send invitation.');
-      return;
-    }
-
-    String text = _invitationController.text;
-    if (text.isEmpty) {
-      _log('Please input content to send.');
-      return;
-    }
-
-    try {
-      AgoraRtmLocalInvitation invitation =
-      AgoraRtmLocalInvitation(peerUid, content: text);
-      _log(invitation.content ?? '');
-      await _client?.sendLocalInvitation(invitation.toJson());
-      _log('Send local invitation success.');
-    } catch (errorCode) {
-      _log('Send local invitation error: ' + errorCode.toString());
-    }
-  }
-
-  void _toggleJoinChannel() async {
-    if (_isInChannel) {
-      try {
-        await _channel?.leave();
-        _log('Leave channel success.');
-        if (_channel != null) {
-          _client?.releaseChannel(_channel.channelId);
-        }
-        _channelMessageController.clear();
-
-        setState(() {
-          _isInChannel = false;
-        });
-      } catch (errorCode) {
-        _log('Leave channel error: ' + errorCode.toString());
-      }
-    } else {
-      String channelId = _channelNameController.text;
-      if (channelId.isEmpty) {
-        _log('Please input channel id to join.');
-        return;
-      }
-
-      try {
-        _channel = await _createChannel(channelId);
-        await _channel?.join();
-        _log('Join channel success.');
-
-        setState(() {
-          _isInChannel = true;
-        });
-      } catch (errorCode) {
-        _log('Join channel error: ' + errorCode.toString());
-      }
-    }
-  }
-
-  void _toggleGetMembers() async {
-    try {
-      List<AgoraRtmMember> members = await _channel?.getMembers();
-      _log('Members: ' + members.toString());
-    } catch (errorCode) {
-      _log('GetMembers failed: ' + errorCode.toString());
-    }
-  }
-
-  void _toggleSendChannelMessage() async {
-    String text = _channelMessageController.text;
-    if (text.isEmpty) {
-      _log('Please input text to send.');
-      return;
-    }
-    try {
-      await _channel?.sendMessage(AgoraRtmMessage.fromText(text));
-      _log('Send channel message success.');
-    } catch (errorCode) {
-      _log('Send channel message error: ' + errorCode.toString());
-    }
-  }
-
-  void _log(String info) {
-    print(info);
+  _stopListening() {
+    _locationSubscription?.cancel();
     setState(() {
-      _infoStrings.insert(0, info);
+      _locationSubscription = null;
     });
   }
-}*/
+
+  _requestPermission() async {
+    var status = await per.Permission.location.request();
+    if (status.isGranted) {
+      print('done');
+    } else if (status.isDenied) {
+      _requestPermission();
+    }
+  }
+}
+
+class MyMap extends StatefulWidget {
+  final String user_id;
+  MyMap(this.user_id);
+  @override
+  _MyMapState createState() => _MyMapState();
+}
+
+class _MyMapState extends State<MyMap> {
+  final Location location = Location();
+  GoogleMapController _controller;
+  bool _added = false;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: StreamBuilder(
+          stream: FirebaseFirestore.instance.collection('location').snapshots(),
+          builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+            if (_added) {
+              mymap(snapshot);
+            }
+            if (!snapshot.hasData) {
+              return Center(child: CircularProgressIndicator());
+            }
+            return GoogleMap(
+              mapType: MapType.normal,
+              markers: {
+                Marker(
+                    position: LatLng(
+                      snapshot.data.docs.singleWhere(
+                              (element) => element.id == widget.user_id)['latitude'],
+                      snapshot.data.docs.singleWhere(
+                              (element) => element.id == widget.user_id)['longitude'],
+                    ),
+                    markerId: MarkerId('id'),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueMagenta)),
+              },
+              initialCameraPosition: CameraPosition(
+                  target: LatLng(
+                    snapshot.data.docs.singleWhere(
+                            (element) => element.id == widget.user_id)['latitude'],
+                    snapshot.data.docs.singleWhere(
+                            (element) => element.id == widget.user_id)['longitude'],
+                  ),
+                  zoom: 14.47),
+              onMapCreated: (GoogleMapController controller) async {
+                setState(() {
+                  _controller = controller;
+                  _added = true;
+                });
+              },
+            );
+          },
+        ));
+  }
+
+  Future<void> mymap(AsyncSnapshot<QuerySnapshot> snapshot) async {
+    await _controller
+        .animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
+        target: LatLng(
+          snapshot.data.docs.singleWhere(
+                  (element) => element.id == widget.user_id)['latitude'],
+          snapshot.data.docs.singleWhere(
+                  (element) => element.id == widget.user_id)['longitude'],
+        ),
+        zoom: 14.47)));
+  }
+}
+
+class Mapt extends StatefulWidget {
+
+  @override
+  _MaptState createState() => _MaptState();
+}
+
+class _MaptState extends State<Mapt> {
+  var lat;
+  var log;
+  final Location location = Location();
+  GoogleMapController _controller;
+  bool _added = false;
+  @override
+  void initState() {
+    super.initState();
+    location.changeSettings(interval: 300, accuracy: LocationAccuracy.high);
+    location.enableBackgroundMode(enable: true);
+    FirebaseDatabase.instance.ref().onValue.listen((event) {
+      final data = event.snapshot;
+      if (data.value != null) {
+        data.children.forEach((element) {
+          setState(() {
+            if (element.key == fuid){
+              lat = element.child('latitude').value;
+              log= element.child('longitude').value;
+            }
+
+          });
+        });
+      }
+    });
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+      elevation: 0,
+      centerTitle: true,
+      backgroundColor: theme ? Colors.white : Colors.black,
+      title: const Text(
+        'Tracking',
+        style: TextStyle(
+          fontFamily: "RedHatMedium",
+          fontSize: 30,
+          color: Color(0xff96D5EB),
+        ),
+      ),
+      leading: IconButton(
+        icon: Icon(Icons.keyboard_backspace),
+        color: Color(0xff96D5EB),
+        onPressed: () {
+          Navigator.of(context).pop();
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => Home()));
+        },
+        iconSize: 30,
+      ),
+    ),
+        body: GoogleMap(
+          mapType: MapType.normal,
+          markers: {
+            Marker(
+                position: LatLng(lat,log,
+                ),
+                markerId: MarkerId('id'),
+                icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueMagenta)),
+          },
+          initialCameraPosition: CameraPosition(
+              target: LatLng(lat,log,
+              ),
+              zoom: 14.47),
+          onMapCreated: (GoogleMapController controller) async {
+            setState(() {
+              _controller = controller;
+              _added = true;
+            });
+          },
+        ),);
+  }
+
+  Future<void> mymap(AsyncSnapshot<QuerySnapshot> snapshot) async {
+    await _controller
+        .animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
+        target: LatLng(lat,log
+        ),
+        zoom: 14.47)));
+  }
+
+}
