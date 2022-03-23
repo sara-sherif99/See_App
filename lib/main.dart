@@ -89,8 +89,9 @@ Future<void> _listenLocation() async {
     final fb = FirebaseDatabase.instance;
     final ref = fb.ref();
     if (accountType == 'Blind'){
+      print(currentlocation.latitude);
     ref
-        .child(currentUser.uid)
+        .child(currentUser.uid+" location")
         .set({
       'latitude': currentlocation.latitude,
       'longitude': currentlocation.longitude,
@@ -219,11 +220,10 @@ Future getUsers() async {
     for (var f in snapshot.docs) {
       usersList.add(f.get("email"));
     }
-    print(usersList);
   }
 }
 
-var fuid;
+var fuid,ruid;
 Future getUid() async {
   var info = FirebaseFirestore.instance;
   await for (var snapshot in info.collection('users').snapshots()) {
@@ -237,25 +237,6 @@ Future getUid() async {
     }
     print("fuid$fuid");
   }
-}
-Future check(x) async {
-  var info = FirebaseFirestore.instance;
-  await for (var snapshot in info.collection('users').snapshots()) {
-    for (var f in snapshot.docs) {
-      if(f.get("Default Friend")==currentUser.email){
-        showToast("already connected to another account");
-      } else if (f.get("Default Friend")==df){
-        showToast("already connected to another account");
-      }
-    }
-  }
-  var userInfo = FirebaseFirestore.instance
-      .collection('users')
-      .doc(currentUser.uid)
-      .update({
-  'Default Friend': x,
-  });
-
 }
 
 var sortedUsers = <String>[];
@@ -346,7 +327,7 @@ Future removeFriend(email) async {
 }
 
 var friend="";
-/*Future getFriend() async {
+Future getFriend() async {
   var info = FirebaseFirestore.instance;
   await for (var snapshot
       in info.collection('users').doc(currentUser.uid).snapshots()) {
@@ -354,7 +335,7 @@ var friend="";
     }
     print("friendsList");
     print(friend);
-  }*/
+  }
 
 var contactsList = <String>[];
 Future getC() async {
@@ -573,7 +554,7 @@ class _SplashState extends State<Splash> {
     requestsList = [];
     themeData();
     getUid();
-    //getFriend();
+    getFriend();
     contactsList = [];
     sortedUsers = [];
     getContacts();
@@ -600,14 +581,14 @@ class _SplashState extends State<Splash> {
       final data = event.snapshot;
       if (data.value != null) {
         data.children.forEach((element) {
-          print(element.child('to').value);
           setState(() {
-            if (element.child('1').value == finalEmail) {
+            if (element.child('friend1').value == finalEmail) {
               channelName=element.key;
             }
-            if (element.child('2').value == finalEmail) {
+            else if (element.child('friend2').value == finalEmail) {
               channelName=element.key;
             }
+            //getFriend();
           });
         });
       }
@@ -1479,19 +1460,21 @@ class _HomeFState extends State<HomeF> {
     FirebaseDatabase.instance.ref().onValue.listen((event) {
       final data = event.snapshot;
       if (data.value != null) {
-        print(data.value.toString().split(" ")[0]);
-        if(data.value.toString().split(" ")[0].substring(1) == currentUser.uid){
-          AwesomeNotifications().createNotification(
-            content: NotificationContent(
-              id: 1,
-              channelKey: 'basic_channel',
-              title: 'Video Call',
-              body: friend,
-              wakeUpScreen:true,
-              category: NotificationCategory.Call,
-            ),
-          );
-        }
+        data.children.forEach((element) {
+          print(element.child('Receiver').value);
+          if(element.child('Receiver').value == currentUser.email){
+            AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                id: 1,
+                channelKey: 'basic_channel',
+                title: 'Video Call',
+                body: friend,
+                wakeUpScreen:true,
+                category: NotificationCategory.Call,
+              ),
+            );
+          }
+        });
         print("token $Token");
         print(data.value);
       }});
@@ -1647,7 +1630,7 @@ class _HomeFState extends State<HomeF> {
                     }),
                   );
                 });
-                getUid();
+                //getUid();
                 Navigator.push(context,
                     MaterialPageRoute(builder: (context) => Call()));
               },
@@ -1700,21 +1683,23 @@ class _HomeScreen extends State<Home> {
     FirebaseDatabase.instance.ref().onValue.listen((event) {
       final data = event.snapshot;
       if (data.value != null) {
-        print(data.value.toString().split(" ")[0]);
-        if(data.value.toString().split(" ")[0].substring(1) == currentUser.uid){
-          AwesomeNotifications().createNotification(
-            content: NotificationContent(
-              id: 1,
-              channelKey: 'basic_channel',
-              title: 'Video Call',
-              body: friend,
-              wakeUpScreen:true,
-              category: NotificationCategory.Call,
-            ),
-          );
-        }
-        print(data.value);
-        }});
+        data.children.forEach((element) {
+          print(element.child('Receiver').value);
+          if(element.child('Receiver').value == currentUser.email){
+            AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                id: 1,
+                channelKey: 'basic_channel',
+                title: 'Video Call',
+                body: friend,
+                wakeUpScreen:true,
+                category: NotificationCategory.Call,
+              ),
+            );
+          }
+        });
+        //print(data.value);
+      }});
 
     /*notification =AwesomeNotifications().actionStream.listen(
             (receivedNotification){
@@ -1774,56 +1759,6 @@ class _HomeScreen extends State<Home> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                         side: BorderSide(
-                          color: b1 ? Colors.red : Color(0xff96D5EB),
-                          width: 2,
-                        )),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        Icon(
-                          Icons.power_settings_new,
-                          color: b1 ? Colors.red : Color(0xff96D5EB),
-                          size: 40,
-                        ),
-                        Text(
-                          "Power",
-                          style: TextStyle(
-                            color: b1 ? Colors.red : Color(0xff96D5EB),
-                            fontSize: 20,
-                            fontFamily: "RedHatMedium",
-                          ),
-                        ),
-                      ],
-                    ),
-                    onLongPress: () async {
-                      await tts.setSpeechRate(0.5);
-                      await tts.speak("power");
-                    },
-                    onPressed: () {
-                      setState(() {
-                        b1 = !b1;
-                      });
-                      AwesomeNotifications().createNotification(
-                        content: NotificationContent(
-                          id: 2,
-                          channelKey: 'basic_channel',
-                          title: 'Video Call',
-                          body: friend,
-                          wakeUpScreen:true,
-                          category: NotificationCategory.Call,
-                        ),
-                      );
-                      //Navigator.push(context,
-                        //  MaterialPageRoute(builder: (context) => Led()));
-                    },
-                  ),
-                  MaterialButton(
-                    height: 150,
-                    minWidth: 150,
-                    color: theme ? Colors.white : Colors.black,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                        side: BorderSide(
                           color: b2 ? Colors.red : Color(0xff96D5EB),
                           width: 2,
                         )),
@@ -1852,6 +1787,12 @@ class _HomeScreen extends State<Home> {
                     onPressed: () async{
                       setState(() {
                         b2 = !b2;
+                        final fb = FirebaseDatabase.instance;
+                        final ref = fb.ref();
+                        ref
+                            .child(currentUser.uid+" state")
+                            .set({
+                          'Buzzer': b2,});
                       });
 
                     },
@@ -1900,7 +1841,7 @@ class _HomeScreen extends State<Home> {
                           }),
                         );
                       });
-                      getUid();
+                      //getUid();
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) => Call()));
                     },
@@ -1910,44 +1851,6 @@ class _HomeScreen extends State<Home> {
               Column(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
-                  MaterialButton(
-                    height: 150,
-                    minWidth: 150,
-                    color: theme ? Colors.white : Colors.black,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                        side: BorderSide(
-                          color: b4 ? Colors.red : Color(0xff96D5EB),
-                          width: 2,
-                        )),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        Icon(
-                          Icons.location_on,
-                          color: b4 ? Colors.red : Color(0xff96D5EB),
-                          size: 40,
-                        ),
-                        Text(
-                          "Location",
-                          style: TextStyle(
-                            color: b4 ? Colors.red : Color(0xff96D5EB),
-                            fontSize: 20,
-                            fontFamily: "RedHatMedium",
-                          ),
-                        ),
-                      ],
-                    ),
-                    onLongPress: () async {
-                      await tts.setSpeechRate(0.5);
-                      await tts.speak("location");
-                    },
-                    onPressed: () {
-                      setState(() {
-                        b4 = !b4;
-                      });
-                    },
-                  ),
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
@@ -2111,22 +2014,24 @@ class _FriendsState extends State<Friends> {
         requestsList = [];
         p = true;
         data.children.forEach((element) {
-          print(element.child('to').value);
+          print(fuid = element.key);
           setState(() {
             if (element.child('from').value == finalEmail) {
               sentrequestsList.add(element.child('to').value);
             }
-            retrievedName = element.child('from').value;
-            if (element.child('to').value == finalEmail) {
+            else if (element.child('to').value == finalEmail) {
+              retrievedName = element.child('from').value;
               requestsList.add(retrievedName);
+              ruid = element.key;
+              print(ruid);
             }
-            if (element.child('1').value == finalEmail) {
-              friend = element.child('2').value;
-              channelName=element.key;
+            if (element.child('friend1').value == finalEmail) {
+              friend = element.child('friend2').value;
+              fuid = element.key.split("-")[1];
             }
-            if (element.child('2').value == finalEmail) {
-              friend = element.child('1').value;
-              channelName=element.key;
+            else if (element.child('friend2').value == finalEmail) {
+              friend = element.child('friend1').value;
+              fuid = element.key.split("-")[0];
             }
             getC();
             //getFriend();
@@ -2137,6 +2042,7 @@ class _FriendsState extends State<Friends> {
     print("friends");
     print(friend);
     print("channel$channelName");
+    //print("fuid"+fuid);
   }
 
   Widget build(BuildContext context) {
@@ -2280,16 +2186,14 @@ class _FriendsState extends State<Friends> {
                                               },
                                               onPressed: () async {
 
-                                                removeFriend(friend);
                                                 ref
-                                                    .child(finalEmail.split("@")[0] +
-                                                    friend.split("@")[0])
+                                                    .child(fuid+"-"+currentUser.uid)
                                                     .remove();
                                                 ref
-                                                    .child(friend.split("@")[0] +
-                                                    finalEmail.split("@")[0])
+                                                    .child(currentUser.uid+"-"+fuid)
                                                     .remove();
                                                 //getFriend();
+                                                removeFriend(friend);
                                                 Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
@@ -2399,16 +2303,13 @@ class _FriendsState extends State<Friends> {
                                           print(p);
                                         });
                                         ref
-                                            .child(finalEmail.split("@")[0] +
-                                                requestsList[index].split("@")[0])
+                                            .child(ruid+"-"+currentUser.uid)
                                             .set({
-                                          '1': requestsList[index],
-                                          '2': finalEmail,
+                                          'friend1': requestsList[index],
+                                          'friend2': finalEmail,
                                         });
                                         ref
-                                            .child(
-                                                requestsList[index].split("@")[0] +
-                                                    finalEmail.split("@")[0])
+                                            .child(ruid)
                                             .remove();
                                         requestsList.remove(requestsList[index]);
                                         //getFriend();
@@ -2435,9 +2336,7 @@ class _FriendsState extends State<Friends> {
                                       },
                                       onPressed: () async {
                                         ref
-                                            .child(
-                                            requestsList[index].split("@")[0] +
-                                                finalEmail.split("@")[0])
+                                            .child(ruid)
                                             .remove();
                                         requestsList.remove(requestsList[index]);
                                       }),
@@ -2678,8 +2577,7 @@ class _AddState extends State<Add> {
                                   }
                                   else{
                                     ref
-                                        .child(finalEmail.split("@")[0] +
-                                        sortedUsers[index].split("@")[0])
+                                        .child(currentUser.uid)
                                         .set({
                                       'to': sortedUsers[index],
                                       'from': finalEmail,
@@ -4859,6 +4757,7 @@ class _CallState extends State<Call> {
   @override
   void initState() {
     super.initState();
+    print(channelName);
     final ref = fb.ref();
     ref
         .child(fuid+" "+currentUser.uid)
@@ -5119,7 +5018,7 @@ class _TrackState extends State<Track> {
               lat = element.child('latitude').value;
               log= element.child('longitude').value;
             }
-            if (element.key == fuid){
+            if (element.key == fuid+" location"){
               lat = element.child('latitude').value;
               log= element.child('longitude').value;
             }
@@ -5295,7 +5194,7 @@ class _MaptState extends State<Mapt> {
       if (data.value != null) {
         data.children.forEach((element) {
           setState(() {
-            if (element.key == fuid){
+            if (element.key == fuid+" location"){
               lat = element.child('latitude').value;
               log= element.child('longitude').value;
             }
