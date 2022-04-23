@@ -1522,7 +1522,7 @@ class _HomeFState extends State<HomeF> {
         alignment: Alignment.center,
         child: Column(
           children: [
-            SizedBox(height: 20,),
+            SizedBox(height: 50,),
             if (friend != null) Text("Linked Account: $friend",
               style: TextStyle(
                 color: theme ? Color(0xff063e71) : Colors.white,
@@ -1531,7 +1531,7 @@ class _HomeFState extends State<HomeF> {
               ),
             ),
             SizedBox(
-              height: 20,
+              height: 50,
             ),
             MaterialButton(
               height: 150,
@@ -1584,7 +1584,7 @@ class _HomeFState extends State<HomeF> {
               },
             ),
             SizedBox(
-              height: 40,
+              height: 20,
             ),
             MaterialButton(
               height: 150,
@@ -1750,7 +1750,7 @@ class _HomeScreen extends State<Home> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   MaterialButton(
                     height: 150,
@@ -1797,6 +1797,7 @@ class _HomeScreen extends State<Home> {
 
                     },
                   ),
+                  SizedBox(height: 20,),
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
@@ -1846,10 +1847,11 @@ class _HomeScreen extends State<Home> {
                           MaterialPageRoute(builder: (context) => Call()));
                     },
                   ),
+                  SizedBox(height: 90,),
                 ],
               ),
               Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   MaterialButton(
                     height: 150,
@@ -1896,6 +1898,7 @@ class _HomeScreen extends State<Home> {
                       goHome();
                     },
                   ),
+                  SizedBox(height: 20,),
                   MaterialButton(
                     height: 150,
                     minWidth: 150,
@@ -1946,6 +1949,7 @@ class _HomeScreen extends State<Home> {
                       print(dc);
                     },
                   ),
+                  SizedBox(height: 90,),
                 ],
               ),
             ],
@@ -3279,6 +3283,12 @@ class _SettingsState extends State<Settings> {
                                 .delete();
                             FirebaseAuth.instance.currentUser.delete();
                             FirebaseAuth.instance.signOut();
+                            FirebaseDatabase.instance.ref()
+                                .child(currentUser.uid+" location")
+                                .remove();
+                            FirebaseDatabase.instance.ref()
+                                .child(currentUser.uid+" state")
+                                .remove();
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -5225,7 +5235,7 @@ class _MaptState extends State<Mapt> {
         onPressed: () {
           Navigator.of(context).pop();
           Navigator.push(
-              context, MaterialPageRoute(builder: (context) => Home()));
+              context, MaterialPageRoute(builder: (context) => HomeF()));
         },
         iconSize: 30,
       ),
