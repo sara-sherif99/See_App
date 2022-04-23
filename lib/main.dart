@@ -74,6 +74,9 @@ const APP_ID="06bae84557cd443ab0b17be7e0374fd8";
 final Location location = Location();
 StreamSubscription<LocationData> _locationSubscription;
 Future<void> _listenLocation() async {
+  Location currentLocation = Location();
+  var loc = await currentLocation.getLocation();
+
   await for (var snapshot in FirebaseFirestore.instance
       .collection('users')
       .doc(currentUser.uid)
@@ -3721,13 +3724,6 @@ class getLocation extends StatefulWidget {
 }
 
 class _getLocationState extends State<getLocation> {
-  /*Position _currentPosition;
-  String _currentAddress;
-  GoogleMapController mapController;
-  final LatLng _center = new LatLng( 37.421998333333335,-122.084);
-  void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
-  }*/
   String _currentAddress;
   GoogleMapController _controller;
   Location currentLocation = Location();
