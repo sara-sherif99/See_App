@@ -94,8 +94,17 @@ flutter:
     - assets/images/bg6.jpg
     - assets/images/bg7.jpg
     - assets/images/user.jpg
+    - assets/images/user1.jpg
+    - assets/images/abeer.jpg
+    - assets/images/ayat.jpg
+    - assets/images/martina.jpg
+    - assets/images/samah.jpg
+    - assets/images/sara.jpg
     - assets/audios/audio.wav
     - assets/person.png
+    - assets/remote.jpg
+    - assets/system2.jpg
+    - assets/system1.jpg
   #  - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -127,6 +127,7 @@ class NavBar extends StatelessWidget {
                 final SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
                 sharedPreferences.remove("email");
                 main.accountType="";
+                main.cancelListen();
                 },
             ),
             SizedBox(height: 10,)

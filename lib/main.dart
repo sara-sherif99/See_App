@@ -8,10 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:graduation/NavBar.dart';
 import 'package:flutter/services.dart';
-//import 'package:graduation/icons.dart';
 import 'package:graduation/see.dart';
 import 'package:location/location.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -20,7 +18,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:flash/flash.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,34 +25,20 @@ import 'package:crypto/crypto.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart' as geol;
 import 'package:geocoding/geocoding.dart' as geoc;
-import 'package:intl/intl.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
-import 'dart:async';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:path/path.dart' as Path;
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:firebase_in_app_messaging/firebase_in_app_messaging.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart' as per;
 //import 'package:agora_rtc_engine/agora_rtc_engine_web.dart';
 //import 'package:agora_rtc_engine/agora_rtc_engine_web.ng.dart';
 //import 'package:agora_rtc_engine/rtc_channel.dart';
 import 'package:agora_rtc_engine/rtc_engine.dart';
-import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
 import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
 import 'package:universal_io/io.dart';
-import 'package:platform_device_id/platform_device_id.dart';
-import 'dart:convert' as convert;
-import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'package:flutter_incoming_call/flutter_incoming_call.dart';
-import 'package:uuid/uuid.dart';
 
 
 var Token;
@@ -101,7 +84,9 @@ Future<void> _listenLocation() async {
     });}
   });
 }
-
+Future cancelListen() async {
+    _locationSubscription?.cancel();
+}
 var theme;
 Future themeData() async {
   var info = FirebaseFirestore.instance;
@@ -543,6 +528,7 @@ class _SplashState extends State<Splash> {
                               ? HomeF()
                               : FirstScreen())));
     });
+    _listenLocation();
     super.initState();
   }
 
@@ -596,6 +582,7 @@ class _SplashState extends State<Splash> {
         });
       }
     });
+
 
   }
 
@@ -1405,6 +1392,14 @@ class _SignUp extends State<Sign> {
                               'Default Contact': "",
                               'Linked Account': "",
                             });
+                            if (accountType == "Blind")
+                            {
+                              final fb = FirebaseDatabase.instance;
+                              final ref = fb.ref();
+                              ref.child(user.uid + " state").set({
+                                'Buzzer': false,
+                              });
+                            }
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(builder: (context) => Splash()),
@@ -1675,14 +1670,16 @@ class _HomeScreen extends State<Home> {
   }
   @override
   void initState() {
+    _requestPermission() async {
+      var status = await per.Permission.location.request();
+      if (status.isGranted) {
+        print('done');
+      } else if (status.isDenied) {
+        _requestPermission();
+      }
+    }
     super.initState();
     messaging = FirebaseMessaging.instance;
-    /*messaging.getToken().then((value) {
-      print(value);
-       saveTokenToDatabase(value);
-       Token=value;
-    });
-    FirebaseMessaging.instance.onTokenRefresh.listen(saveTokenToDatabase);*/
     FirebaseDatabase.instance.ref().onValue.listen((event) {
       final data = event.snapshot;
       if (data.value != null) {
@@ -1704,14 +1701,6 @@ class _HomeScreen extends State<Home> {
         //print(data.value);
       }});
 
-    /*notification =AwesomeNotifications().actionStream.listen(
-            (receivedNotification){
-
-          Navigator.push(context,
-          MaterialPageRoute(builder: (context) => Test()));
-        }
-    );*/
-    //setupInteractedMessage();
 
   }
 
@@ -1845,9 +1834,12 @@ class _HomeScreen extends State<Home> {
                           }),
                         );
                       });
-                      //getUid();
+                      if (fuid != null){
                       Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => Call()));
+                          MaterialPageRoute(builder: (context) => Call()));}
+                      else {
+                        showToast("no linked account");
+                      }
                     },
                   ),
                   SizedBox(height: 90,),
@@ -2882,155 +2874,158 @@ class _SettingsState extends State<Settings> {
         showDialog(
             context: context,
             builder: (BuildContext context) {
-              return SingleChildScrollView(
-                child: AlertDialog(
-                  title: Text(
-                    title,
-                    style: TextStyle(
-                      fontFamily: "RedHatMedium",
-                    ),
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: new EdgeInsets.all(20.0),
-                        child: Column(
-                          children: [
-                            contactsList.isNotEmpty
-                                ? listOfWidgets(context, contactsList)
-                                : SizedBox(
-                                    height: 10,
-                                  ),
-                          ],
-                        ),
+              return Center(
+                child: SingleChildScrollView(
+                  child: AlertDialog(
+                    title: Text(
+                      title,
+                      style: TextStyle(
+                        fontFamily: "RedHatMedium",
                       ),
-                      MaterialButton(
-                        onLongPress: () async {
-                          if (accountType == 'Blind') {
-                            await tts.setSpeechRate(0.5);
-                            await tts.speak("Add" + option);
-                          }
-                        },
-                        onPressed: () {
-                          showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  shape: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(10)),
-                                      borderSide: BorderSide(
-                                        width: 0,
-                                        color: Colors.white,
-                                      )),
-                                  scrollable: true,
-                                  title: Text(
-                                    'Add Contact',
-                                    style: TextStyle(
-                                      fontSize: 30,
-                                      fontFamily: "RedHatMedium",
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: new EdgeInsets.all(20.0),
+                          child: Column(
+                            children: [
+                              contactsList.isNotEmpty
+                                  ? listOfWidgets(context, contactsList)
+                                  : SizedBox(
+                                      height: 10,
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  content: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Form(
-                                      child: Column(
-                                        children: <Widget>[
-                                          TextFormField(
-                                            onTap: () async {
-                                              if (accountType == 'Blind') {
-                                                await tts.setSpeechRate(0.5);
-                                                await tts.speak("Phone number");
-                                              }
-                                            },
-                                            decoration: InputDecoration(
-                                              labelText: 'Phone Number',
-                                              icon: Icon(
-                                                Icons.call,
-                                                color: Color(0xff96D5EB),
-                                              ),
-                                            ),
-                                            controller: number,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  actions: [
-                                    Center(
-                                      child: MaterialButton(
-                                        color: Color(0xff96D5EB),
-                                        child: Text(
-                                          'Add',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontFamily: "RedHatBold",
-                                          ),
-                                        ),
-                                        onLongPress: () async {
-                                          if (accountType == 'Blind') {
-                                            await tts.setSpeechRate(0.5);
-                                            await tts.speak("Add");
-                                          }
-                                        },
-                                        onPressed: () {
-                                          contactsList = [];
-                                          if (number.text != "" &&
-                                              number.text.length == 11) {
-                                            var userInfo = FirebaseFirestore
-                                                .instance
-                                                .collection('users')
-                                                .doc(currentUser.uid)
-                                                .update({
-                                              'Contacts': FieldValue.arrayUnion(
-                                                  [number.text])
-                                            });
-                                          } else if (number.text.length != 11) {
-                                            showToast("enter valid number");
-                                          }
-                                          Navigator.pop(context);
-                                          clearText();
-                                          Navigator.pop(context);
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              });
-                        },
-                        child: Text(
-                          "+ Add",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontFamily: "RedHatBold",
+                            ],
                           ),
                         ),
-                      ),
+                        MaterialButton(
+                          onLongPress: () async {
+                            if (accountType == 'Blind') {
+                              await tts.setSpeechRate(0.5);
+                              await tts.speak("Add" + option);
+                            }
+                          },
+                          onPressed: () {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    alignment: Alignment.center,
+                                    shape: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.all(Radius.circular(10)),
+                                        borderSide: BorderSide(
+                                          width: 0,
+                                          color: Colors.white,
+                                        )),
+                                    scrollable: true,
+                                    title: Text(
+                                      'Add Contact',
+                                      style: TextStyle(
+                                        fontSize: 30,
+                                        fontFamily: "RedHatMedium",
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    content: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Form(
+                                        child: Column(
+                                          children: <Widget>[
+                                            TextFormField(
+                                              onTap: () async {
+                                                if (accountType == 'Blind') {
+                                                  await tts.setSpeechRate(0.5);
+                                                  await tts.speak("Phone number");
+                                                }
+                                              },
+                                              decoration: InputDecoration(
+                                                labelText: 'Phone Number',
+                                                icon: Icon(
+                                                  Icons.call,
+                                                  color: Color(0xff96D5EB),
+                                                ),
+                                              ),
+                                              controller: number,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    actions: [
+                                      Center(
+                                        child: MaterialButton(
+                                          color: Color(0xff96D5EB),
+                                          child: Text(
+                                            'Add',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontFamily: "RedHatBold",
+                                            ),
+                                          ),
+                                          onLongPress: () async {
+                                            if (accountType == 'Blind') {
+                                              await tts.setSpeechRate(0.5);
+                                              await tts.speak("Add");
+                                            }
+                                          },
+                                          onPressed: () {
+                                            contactsList = [];
+                                            if (number.text != "" &&
+                                                number.text.length == 11) {
+                                              var userInfo = FirebaseFirestore
+                                                  .instance
+                                                  .collection('users')
+                                                  .doc(currentUser.uid)
+                                                  .update({
+                                                'Contacts': FieldValue.arrayUnion(
+                                                    [number.text])
+                                              });
+                                            } else if (number.text.length != 11) {
+                                              showToast("enter valid number");
+                                            }
+                                            Navigator.pop(context);
+                                            clearText();
+                                            Navigator.pop(context);
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                });
+                          },
+                          child: Text(
+                            "+ Add",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontFamily: "RedHatBold",
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      MaterialButton(
+                          onLongPress: () async {
+                            if (accountType == 'Blind') {
+                              await tts.setSpeechRate(0.2);
+                              await tts.speak("close");
+                            }
+                          },
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          elevation: 0,
+                          color: Colors.white,
+                          child: Text(
+                            "Close",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontFamily: "RedHatBold",
+                            ),
+                          )),
                     ],
                   ),
-                  actions: [
-                    MaterialButton(
-                        onLongPress: () async {
-                          if (accountType == 'Blind') {
-                            await tts.setSpeechRate(0.2);
-                            await tts.speak("close");
-                          }
-                        },
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        elevation: 0,
-                        color: Colors.white,
-                        child: Text(
-                          "Close",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontFamily: "RedHatBold",
-                          ),
-                        )),
-                  ],
                 ),
               );
             });
@@ -3162,91 +3157,6 @@ class _SettingsState extends State<Settings> {
         children: list);
   }
 
-//remove
-  GestureDetector buildPrivacyAndSecurityOptionRow(
-    BuildContext context,
-    String title,
-  ) {
-    return GestureDetector(
-      onLongPress: () async {
-        if (accountType == 'Blind') {
-          await tts.setSpeechRate(0.2);
-          await tts.speak(title);
-        }
-      },
-      onTap: () {
-        showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text(title),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Privacy"),
-                        MaterialButton(
-                          onPressed: () {},
-                          child: Text(
-                            "edit",
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        )
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Security"),
-                        MaterialButton(
-                          onPressed: () {},
-                          child: Text(
-                            "edit",
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        )
-                      ],
-                    ),
-                  ],
-                ),
-                actions: [
-                  MaterialButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      color: Colors.red,
-                      child: Text(
-                        "Close",
-                        style: TextStyle(color: Colors.white),
-                      )),
-                ],
-              );
-            });
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.grey,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   GestureDetector buildDeactivateAccountOptionRow(
     BuildContext context,
@@ -3286,12 +3196,25 @@ class _SettingsState extends State<Settings> {
                                 .delete();
                             FirebaseAuth.instance.currentUser.delete();
                             FirebaseAuth.instance.signOut();
-                            FirebaseDatabase.instance.ref()
-                                .child(currentUser.uid+" location")
-                                .remove();
-                            FirebaseDatabase.instance.ref()
-                                .child(currentUser.uid+" state")
-                                .remove();
+                            if (accountType == "Blind"){
+                              FirebaseDatabase.instance
+                                  .ref()
+                                  .child(currentUser.uid + " location")
+                                  .remove();
+                            }
+                            if (accountType == "Blind"){
+                              FirebaseDatabase.instance
+                                  .ref()
+                                  .child(currentUser.uid + " state")
+                                  .remove();
+                            }
+                            final fb = FirebaseDatabase.instance;
+                            final ref = fb.ref();
+                            if (fuid !=null){
+                              ref.child(fuid + "-" + currentUser.uid).remove();
+                              ref.child(currentUser.uid + "-" + fuid).remove();
+                            }
+                            cancelListen();
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -4340,45 +4263,86 @@ class AboutDevice extends StatelessWidget {
           ],
         ),
         drawer: NavBar(),
-        body: Container(
-          alignment: Alignment.center,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 20,
-              ),
-              Text(
-                "About Device",
-                style: TextStyle(
-                  fontFamily: "RedHatRegular",
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: theme ? Color(0xff063e71): Colors.white,
+        body: SingleChildScrollView(
+          child: Container(
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 20,
                 ),
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              if (accountType == "Blind")
-                IconButton(
-                    onPressed: () async {
-                      if (accountType == 'Blind') {
-                        await tts.setSpeechRate(0.2);
-                        await tts.speak("About Device");
-                      }
-                    },
-                    icon: Icon(
-                      Icons.volume_down,
-                      color: Colors.orange,
-                      size: 40,
-                    )),
-              Text(
-                "qwertyuuiopasdfghjkkfjjfffffffffffffffffjfffffffffff",
-                style: TextStyle(
-                    fontFamily: "RedHatMedium",
-                    color: theme ? Colors.black : Colors.white),
-              ),
-            ],
+                Text(
+                  "About Device",
+                  style: TextStyle(
+                    fontFamily: "RedHatRegular",
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    color: theme ? Color(0xff063e71): Colors.white,
+                  ),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                Image(image: AssetImage("assets/remote.jpg"),height: 200,),
+                if (accountType == "Blind")
+                  IconButton(
+                      onPressed: () async {
+                        if (accountType == 'Blind') {
+                          await tts.setSpeechRate(0.5);
+                          await tts.speak("press 1 for color detection, 2 for face detection");
+                        }
+                      },
+                      icon: Icon(
+                        Icons.volume_down,
+                        color: Colors.orange,
+                        size: 40,
+                      )),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    "Press 1 for \n "
+                        "Press 2 for ",
+                    style: TextStyle(
+                        fontFamily: "RedHatMedium",
+                        fontSize: 25,
+                        color: theme ? Colors.black : Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                Image(image: AssetImage("assets/system1.jpg"),height: 168,),
+                SizedBox(
+                  height: 10,
+                ),
+                Image(image: AssetImage("assets/system2.jpg"),height: 200,),
+                if (accountType == "Blind")
+                  IconButton(
+                      onPressed: () async {
+                        if (accountType == 'Blind') {
+                          await tts.setSpeechRate(0.5);
+                          await tts.speak("The supported wearable device is a complete system that is composed of a Raspberry PI camera, IR sensor, earphones and microphone which are mounted on a 3D-printed container and can be attached to any glasses. The system is powered by a Raspberry PI microcontroller and power is supplied by a power bank. These components are contained in a package that the user can carry or hold by hand. A user can control the operation of the device either through voice commands or by using a remote control.");
+                        }
+                      },
+                      icon: Icon(
+                        Icons.volume_down,
+                        color: Colors.orange,
+                        size: 40,
+                      )),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    "The supported wearable device is a complete system that is composed of a Raspberry PI camera, IR sensor, earphones and microphone which are mounted on a 3D-printed container and can be attached to any glasses. The system is powered by a Raspberry PI microcontroller and power is supplied by a power bank. These components are contained in a package that the user can carry or hold by hand. A user can control the operation of the device either through voice commands or by using a remote control.",
+                    style: TextStyle(
+                        fontFamily: "RedHatMedium",
+                        fontSize: 25,
+                        color: theme ? Colors.black : Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -4422,45 +4386,80 @@ class AboutUs extends StatelessWidget {
           ],
         ),
         drawer: NavBar(),
-        body: Container(
-          alignment: Alignment.center,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 20,
-              ),
-              Text(
-                "About Us",
-                style: TextStyle(
-                  fontFamily: "RedHatRegular",
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: theme ? Color(0xff063e71) : Colors.white,
+        body: SingleChildScrollView(
+          child: Container(
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 20,
                 ),
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              if (accountType == "Blind")
-                IconButton(
-                    onPressed: () async {
-                      if (accountType == 'Blind') {
-                        await tts.setSpeechRate(0.2);
-                        await tts.speak("About Device");
-                      }
-                    },
-                    icon: Icon(
-                      Icons.volume_down,
-                      color: Colors.orange,
-                      size: 40,
-                    )),
-              Text(
-                "qwertyuuiopasdfghjkkfjjfffffffffffffffffjfffffffffff",
-                style: TextStyle(
-                    fontFamily: "RedHatMedium",
-                    color: theme ? Colors.black : Colors.white),
-              ),
-            ],
+                Text(
+                  "About Us",
+                  style: TextStyle(
+                    fontFamily: "RedHatRegular",
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    color: theme ? Color(0xff063e71) : Colors.white,
+                  ),
+                ),
+                SizedBox(
+                  height: 30,
+                ),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundImage:AssetImage("assets/images/ayat.jpg"),
+                  ),
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundImage:AssetImage("assets/images/abeer.jpg"),
+                  ),
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundImage:AssetImage("assets/images/samah.jpg"),
+                  ),
+                ],),
+                SizedBox(height:10,),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundImage:AssetImage("assets/images/sara.jpg"),
+                    ),
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundImage:AssetImage("assets/images/martina.jpg"),
+                    ),
+                  ],),
+                SizedBox(height:5,),
+                if (accountType == "Blind")
+                  IconButton(
+                      onPressed: () async {
+                        if (accountType == 'Blind') {
+                          await tts.setSpeechRate(0.5);
+                          await tts.speak("A team of computer engineering final year students. We selected this project as our graduation project to help visually impaired people of all ages since we believe that everyone should have the opportunity to learn and experience life like anyone else. A person with visual disability faces a lot of social problems. Over sympathy might seem the lightest of all, but may actually be the toughest in hurting his emotions. We believe that good vision unlocks human potential, and that every person is gifted in his own way. So, we had to provide the means for the visually-impaired to thrive and flourish without much obstacles bringing them down.",);
+                        }
+                      },
+                      icon: Icon(
+                        Icons.volume_down,
+                        color: Colors.orange,
+                        size: 40,
+                      )),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    "A team of computer engineering final year students. We selected this project as our graduation project to help visually impaired people of all ages since we believe that everyone should have the opportunity to learn and experience life like anyone else. A person with visual disability faces a lot of social problems. Over sympathy might seem the lightest of all, but may actually be the toughest in hurting his emotions. We believe that good vision unlocks human potential, and that every person is gifted in his own way. So, we had to provide the means for the visually-impaired to thrive and flourish without much obstacles bringing them down.",
+                    style: TextStyle(
+                        fontFamily: "RedHatMedium",
+                        fontSize: 25,
+                        color: theme ? Colors.black : Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
